@@ -1,5 +1,7 @@
 // Kyle Geib - Program 4 - CSS434 Fall 2012 - Dr Fukuda - November 13rd 2012
 
+package main;
+
 import java.io.*;
 import java.util.*;
 

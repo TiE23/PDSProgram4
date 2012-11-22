@@ -1,5 +1,7 @@
 // Kyle Geib - Program 4 - CSS434 Fall 2012 - Dr Fukuda - November 13rd 2012
 
+package main;
+
 import java.rmi.*;
 import java.rmi.server.UnicastRemoteObject;
 
@@ -26,18 +28,18 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface {
 		this.clientState = ClientState.Invalid;
 	}
 	
-	// Invalidate
+	// Invalidate, an RMI method
 	public boolean invalidate() {
 		clientState = ClientState.Invalid;
 		return true;
 	}
 	
-	// Writeback
+	// Writeback, an RMI method
 	public boolean writeback() {
 		return false;
 	}
 	
-	/**Saves the inputted byte array to "tmp/accountname.txt"
+	/**Saves the inputed byte array to "tmp/accountname.txt"
 	 * @param data The byte array to write to file
 	 */
 	private void writeToFile(byte[] data) {
@@ -53,8 +55,13 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface {
 		return null;
 	}
 	
-	/**
-	 * 
+	/**Performs the user prompting cycle in the console.
+	 */
+	private void userPrompt() {
+		// TODO - Write the user prompt loop method and handle the user account stuff
+	}
+	
+	/**Main function handles the command line invocation.
 	 * @param args
 	 */
 	public static void main(String[] args) {

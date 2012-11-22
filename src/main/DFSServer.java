@@ -1,8 +1,14 @@
 // Kyle Geib - Program 4 - CSS434 Fall 2012 - Dr Fukuda - November 13rd 2012
 
+package main;
+
 import java.rmi.*;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.Vector;
+
+// TODO - Fix this bullshit
+import main.FileContainer.FileState;
+
 
 /**DFS Server
  * @author Kyle Geib
@@ -24,15 +30,21 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 		
 		// If the cache does not contain a file by that name, create a new one
 		if (!cache.contains(fileName)) {
-			// Create a new File with fileName
+			
+			// Create a new File with fileName, the requesting client, and mode
 			FileContainer newFile = 
 					new FileContainer(fileName, clientIP, mode);
 			
-			cache.add(newFile);			// Add it to the cache
-			return newFile.getData();	// return the FileContents
-		} else {
-			// TODO - The file does exist. A whole other can of worms.
+			cache.add(newFile);		// Add it to the cache
+			return newFile.data;	// return the FileContents
 			
+		} else if (mode.equals('r')) {	// File exists, requests read
+			
+			// TODO - The file does exist. A whole other can of worms.
+			FileContainer file = cache.get(cache.indexOf(fileName));
+			//found.
+		} else {	// File exists, requests write
+			FileContainer file = cache.get(cache.indexOf(fileName));
 		}
 		
 		return null;
@@ -40,7 +52,20 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 	
 	// Upload
 	public boolean upload(String clientIP, String fileName, String mode) {
-		return false;
+		if (!cache.contains(fileName))
+			return false;
+		
+		FileContainer file = cache.get(cache.indexOf(fileName));
+		
+		if (file.fileState == FileState.Not_Shared || !file.owner.equals(clientIP))
+			return false;
+		
+		if (file.fileState == FileState.Read_Shared) {
+			file.fileState = FileState.Not_Shared;
+			return false;
+		}
+		
+		return true;
 	}
 	
 	/**Main function. Starts the RMI services of the DFSServer.
