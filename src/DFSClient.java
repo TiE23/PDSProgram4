@@ -16,6 +16,7 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface {
 	private ClientState clientState; 	// The current state of this client.
 	private String serverIP;			// The DFSServer's IP name.
 	private FileContents fileContents;	// This client's file contents object.
+	private String accountName;			// The client account's name.
 	
 	/**Constructor for DFSClient
 	 * @param serverIP DFSServer's IP
@@ -36,6 +37,26 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface {
 		return false;
 	}
 	
+	/**Saves the inputted byte array to "tmp/accountname.txt"
+	 * @param data The byte array to write to file
+	 */
+	private void writeToFile(byte[] data) {
+		// TODO - Look up the semantics for .txt files and other data stream stuff
+	}
+	
+	/**Reads the file "tmp/accountname.txt" and puts it into a raw byte array
+	 * @return data in the form of a byte array
+	 */
+	private byte[] readFromFile() {
+		
+		// TODO - Look up the semantics for reading from .txt files to byte arrays
+		return null;
+	}
+	
+	/**
+	 * 
+	 * @param args
+	 */
 	public static void main(String[] args) {
 		if ( args.length != 2 ) {
 		    System.err.println( "usage: java DFSClient ServerIP port#" );
