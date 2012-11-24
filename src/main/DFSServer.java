@@ -52,6 +52,8 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 		if (0 < vectorCCSearch(clientList, clientIP)) {
 			// It isn't, so add the client and its file.
 			clientList.add(new ClientContainer(clientIP, fileName));
+		} else { // Recognized Client, update its latest file.
+			clientList.elementAt(vectorCCSearch(clientList, clientIP)).fileName = fileName;
 		}
 		
 		// Check to see if this is a recognized fileName.
