@@ -20,8 +20,8 @@ public interface ServerInterface extends Remote {
     /**Upload is called from a DFSClient and has a file sent to the Server.
      * @param clientIP
      * @param fileName
-     * @param mode
+     * @param data
      * @return Whether or not the action was successful.
      */
-    public boolean upload(String clientIP, String fileName, String mode);
+    public boolean upload(String clientIP, String fileName, FileContents data);
 }

@@ -27,7 +27,9 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface {
 	
 	
 	/**Constructor for DFSClient
-	 * @param serverIP DFSServer's IP
+	 * @param accountName The user's name.
+	 * @param clientIP The client's own IP name. (ex: "uw1-320-09")
+	 * @param serverIP DFSServer's IP. (ex: "uw1-320-16")
 	 */
 	public DFSClient(String accountName, String clientIP, 
 			String serverIP) throws RemoteException {
@@ -43,11 +45,19 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface {
 		
 		// TODO - Work in the user-prompt system.
 		//userPrompt();
+		
+		
+		// TODO
+		/* Attempting a server.download() call will need to handle 
+		 * null returns... which means that it has been suspended and 
+		 * will be fulfilled later.
+		 * */
 	}
 	
 	
 	// Invalidate, an RMI method
 	public boolean invalidate() {
+		// TODO - I wonder if it'll stay this simple...
 		clientState = ClientState.Invalid;
 		return true;
 	}
@@ -55,6 +65,7 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface {
 	
 	// Writeback, an RMI method
 	public boolean writeback() {
+		// TODO
 		return false;
 	}
 	

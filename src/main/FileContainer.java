@@ -43,25 +43,34 @@ public class FileContainer {
 	public FileContainer(String fileName, String clientIP, String mode) {
 		this.fileName = fileName;
 		readers = new Vector<String>();
-		readers.add(clientIP);	// Add creating client's IP to the readers list
 		
-		if (mode.equals("w")) {	
+		if (mode.equals("w")) {	// Write mode.
+			
 			owner = clientIP;	// If writing, then this creator is the owner
 			fileState = FileState.Write_Shared;	// Write
-		} else {
-			fileState = FileState.Read_Shared;	// Read
+			
+		} else {				// Read mode.
+			
+			readers.add(clientIP);	// Add creating client to the readers list
+			fileState = FileState.Read_Shared;	// Read	
+			
 		}
 		
 		data = new FileContents(new byte[0]); // Start with size-of-zero array
 	}
 	
 	
-	/**For use with Vector's contains() method among others.
-	 * @param fileName
-	 * @return
+	/**Add a clientIP as a reader for this file without inserting repeats.
+	 * @param clientIP The new client wanting to read this file.
+	 * @return 
 	 */
-	public boolean equals(String fileName) {
-		// TODO - If this doesn't work. May need to make a FileContainers Object before comparison.
-		return this.fileName.equals(fileName);
+	public boolean safeAddReader(String clientIP) {
+		if (readers.contains(clientIP)) {
+			return false;	// This client is already a reader. Don't add again
+		} else {
+			readers.add(clientIP);
+			return true;	// This client is not a reader. Add to readers.
+		}
+			
 	}
 }
