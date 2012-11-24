@@ -6,7 +6,6 @@ import java.io.*;
 import java.util.*;
 
 /**Class holds the byte[] data of the file.
- * @author Kyle Geib
  */
 public class FileContents implements Serializable {
 	private byte[] contents;	// file contents

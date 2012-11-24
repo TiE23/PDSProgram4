@@ -4,6 +4,9 @@ package main;
 import java.rmi.*;
 import java.util.*;
 
+/**Interface class for the DFSServer.
+ * @author Kyle Geib
+ */
 public interface ServerInterface extends Remote {
 	/**Download is called from a DFSClient and has a file sent to the Client.
 	 * @param clientIP

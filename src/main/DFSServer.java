@@ -5,8 +5,6 @@ package main;
 import java.rmi.*;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.Vector;
-
-// TODO - Fix this bullshit
 import main.FileContainer.FileState;
 
 

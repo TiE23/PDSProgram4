@@ -4,6 +4,9 @@ package main;
 import java.rmi.*;
 import java.util.*;
 
+/**Interface class for the DFSClient.
+ * @author Kyle Geib
+ */
 public interface ClientInterface extends Remote {
 	/**Invalidates the Client's file.
 	 * @return Success of the invalidation of the Client's file.

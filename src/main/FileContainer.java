@@ -61,6 +61,7 @@ public class FileContainer {
 	 * @return
 	 */
 	public boolean equals(String fileName) {
+		// TODO - If this doesn't work. May need to make a FileContainers Object before comparison.
 		return this.fileName.equals(fileName);
 	}
 }
