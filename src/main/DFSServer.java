@@ -4,7 +4,6 @@ package main;
 
 import java.rmi.*;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.Queue;
 import java.util.Vector;
 import main.FileContainer.FileState;
 
@@ -21,14 +20,14 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 		public String clientIP;
 		public String fileName;
 
-		public ClientContainer(String clientIP, String currentFileName) {
+		public ClientContainer(String clientIP, String fileName) {
 			this.clientIP = clientIP;
-			this.fileName = currentFileName;
+			this.fileName = fileName;
 		}
 	}
 	
 	private Vector<ClientContainer> jobQueueWS;
-	private Queue<ClientContainer> jobQueueOC;
+	private Vector<ClientContainer> jobQueueOC;
 	
 	private Vector<ClientContainer> clientList;
 	private Vector<FileContainer> cache;
@@ -127,12 +126,19 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 				return file.data;
 				
 			} else if (file.fileState == FileState.Write_Shared) {
-				// TODO
 				/*Call the current owner's writeback() function, 
 				 * and thereafter suspends this download() function.*/
+				
+				callWriteback(fileName);			// Make writeback call.
+				suspendJobWS(clientIP, fileName);	// Suspend download().
+				
+				return null;
+				
 			} else if (file.fileState == FileState.Ownership_Change) {
-				// TODO
 				/*Immediately suspend this download() function call.*/
+				suspendJobOC(clientIP, fileName);	// Suspend download().
+				
+				return null;
 			}
 		}
 		
@@ -163,35 +169,33 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 			
 		} else if (file.fileState == FileState.Write_Shared) {
 			
-			try {
-				invalidateAll(file);	// Invalidate all readers.
-			} catch (Exception e) { e.printStackTrace(); }
-			
-			file.data = data;	// Update file's contents.
 			file.fileState = FileState.Not_Shared;	// Next state.
+			
+			invalidateAll(file);	// Invalidate all readers.
+			file.data = data;	// Update file's contents.
+			
 			
 			return true;
 			
 		} else if (file.fileState == FileState.Ownership_Change) {
-			// TODO
-			/* Update the entry data with the given fileContents.
-			 * Invalidate a copy of each client registered in the readers list.
-			 * Resume download() that has been suspended in Write_Shared. In
-			 * other words, register the resumed client to the owner field.
-			 * Return a FileContents object to this client.
-			 * (Just before the return, resume one of the download() calls
-			 * that has been suspended in Ownership_Change.*/
+			
+			file.fileState = FileState.Write_Shared;	// Next state.
+			file.data = data;	// Update file's contents.
 			
 			try {
 				invalidateAll(file);	// Invalidate all readers.
 			} catch (Exception e) { e.printStackTrace(); }
 			
-			file.data = data;	// Update file's contents.
-			file.fileState = FileState.Write_Shared;	// Next state.
+			file.owner = clientIP;	// Update owner.
+			
+			// Resume download suspended in Write_Shared.
+			resumeJobWS(fileName);	
+			
+			// Resume download suspended in Ownership_Change.
+			resumeJobOC(fileName);	
 			
 			return true;
 		}
-		
 		return false;
 	}
 	
@@ -201,7 +205,7 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 	 * @param file FileContainer that needs to have all readers invalidated.
 	 * @throws Exception
 	 */
-	private void invalidateAll(FileContainer file) throws Exception {
+	private void invalidateAll(FileContainer file) {
 		
 		for (int x = 0; x < file.readers.size(); ++x) {
 			String clientName = file.readers.elementAt(x);
@@ -214,11 +218,14 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 						vectorCCSearch(clientList, clientName)).
 						fileName.equals(file.fileName) ) {
 					
-					ClientInterface client = (ClientInterface)
-							Naming.lookup("rmi://" + clientName + 
-									":" + port + "/dfsclient");
-					
-					client.invalidate();	// Invalidate!
+					try {
+						ClientInterface client = (ClientInterface)
+									Naming.lookup("rmi://" + clientName +
+											":" + port + "/dfsclient");
+						
+						client.invalidate();	// Invalidate!
+						
+					} catch (Exception e) {e.printStackTrace();} 
 				}
 			} catch (ArrayIndexOutOfBoundsException e) {
 				break;	// The client did not exist.
@@ -229,48 +236,123 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 		file.readers.clear();
 	}
 	
-	private boolean suspendJobWS(String clientIP, String fileName) {
-		// TODO
-		/*This will take a clientIP and its fileName that needs to download
-		 * and put it into the WS vector where resumes are specific.*/
-		return false;
-	}
 	
-	private boolean suspendJobOC(String clientIP, String fileName) {
-		// TODO
-		/*This will take a clientIP and its fileName that needs to download
-		 * and put it into the OC queue where resumes are simply performed
-		 * in the order received.*/
-		return false;
-	}
-	
-	private boolean resumeJobWS(String fileName) {
-		// TODO
-		/*This will take a clientIP and its fileName that needs to download
-		 * and resume it with a call to download(clientIP, fileName, "w"). It
-		 * tracks the jobs by the file name requested, [so it will need to
-		 * repeat search of the jobQueueWS until all jobs for the particluar
-		 * file are resumed.]***
-		 * *** I don't know if this is true yet! */
-		return false;
-	}
-	
-	private boolean resumeJobOC() {
-		// TODO
-		/*Resumes a waiting OC job. Simply uses the ClientContainer's contents
-		 * to resume a download(clientIP, fileName, "w") call.*/
+	/**Requests a writeback on a file.
+	 * @param fileName The file that needs a writeback.
+	 * @return If the writeback was successful.
+	 */
+	private boolean callWriteback(String fileName) {
 		
-		/*
-		 * WELL FUCK I JUST MANAGED TO REALIZE THAT WE COMMUNICATE WITH RETURN
-		 * VALUES WITH DOWNLOAD, SO CALLING DOWNLOAD LOCALLY WILL DO JACK 
-		 * SQUAT. NEED TO RETHINK THIS... MAYBE WE MAKE THE CLIENT RECALL 
-		 * DOWNLOAD? NOT SURE. IT MAY NOT BE ABLE TO COMPLETE SUCH A REQUEST
-		 * AT RANDOM? WELL, IT CAN COMPLETE A REQUEST AT RANDOM WHILE 
-		 * EDITING IN EMACS WITH INVALIDATE AND WRITEBACK, SO MAYBE IT'LL WORK 
-		 * OKAY... OKAY, SO WE'LL MAKE A NEW FUNCTION IN THE CLIENTINTERFACE 
-		 * CALLED "NOTIFY" OR SOMETHING...
-		 * */
-		return false;
+		String owner = cache.elementAt(vectorFCSearch(cache, fileName)).owner;
+		
+		if (!owner.equals("")) {	// Make sure this file has a listed owner.
+			try {
+			ClientInterface client = (ClientInterface)
+					Naming.lookup("rmi://" + owner +
+							":" + port + "/dfsclient");
+			
+			return client.writeback();	// Call writeback!
+			
+			} catch (Exception e) {e.printStackTrace(); return false;}
+			
+		} else						// File has no owner!
+			return false;
+	}
+	
+	
+	/**Waiting for a writeback, download request jobs are placed into a vector
+	 * where the two details needed (client name and file name) will be held
+	 * until a file has been updated and thus can be downloaded.
+	 * This function is for Write_Shared suspensions. (Therefore, "WS").
+	 * @param clientIP
+	 * @param fileName
+	 * @return
+	 */
+	private boolean suspendJobWS(String clientIP, String fileName) {
+		
+		// Add to job queue.
+		jobQueueWS.add(new ClientContainer(clientIP, fileName));
+		
+		return true;
+	}
+	
+	
+	/**Waiting for a writeback, download request jobs are placed into a vector
+	 * where the two details needed (client name and file name) will be held
+	 * until a file has been updated and thus can be downloaded.
+	 * This function is for Ownership_Change suspensions. (Therefore, "OC").
+	 * @param clientIP
+	 * @param fileName
+	 * @return
+	 */
+	private boolean suspendJobOC(String clientIP, String fileName) {
+		
+		// Add to job queue.
+		jobQueueOC.add(new ClientContainer(clientIP, fileName));
+		
+		return true;
+	}
+	
+	
+	/**Notifies a client that their file download can be fulfilled now.
+	 * @param fileName The file to notify its requesters of.
+	 * @return
+	 */
+	private boolean resumeJobWS(String fileName) {
+
+		int index = vectorCCSearch(jobQueueWS, fileName);
+		
+		if (index < 0 ) {
+			return false;	// No such job exists! (This is bad!)
+			
+		} else {
+			
+			ClientContainer temp = jobQueueWS.get(index);
+			
+			try {
+				ClientInterface client = (ClientInterface)
+							Naming.lookup("rmi://" + temp.clientIP +
+									":" + port + "/dfsclient");
+				
+				client.resume(temp.fileName);	// Notify client to try again.
+				
+			} catch (Exception e) {e.printStackTrace(); return false;} 
+			
+			jobQueueWS.remove(index);	// Dequeue the job.
+			return true;
+		}
+	}
+	
+	
+	/**Notifies a client to try their write request download again.
+	 * As a result they may be the first in line for a request or simply 
+	 * one space closer in the line to gaining write control to this file.
+	 * @param fileName The file to notify its requesters of.
+	 * @return
+	 */
+	private boolean resumeJobOC(String fileName) {
+		
+		int index = vectorCCSearch(jobQueueOC, fileName);
+		
+		if (index < 0 ) {
+			return false;	// No such job exists! (This is bad!)
+			
+		} else {
+			
+			ClientContainer temp = jobQueueOC.get(index);
+			
+			try {
+				ClientInterface client = (ClientInterface)
+							Naming.lookup("rmi://" + temp.clientIP +
+									":" + port + "/dfsclient");
+				
+				client.resume(temp.fileName);	// Notify client to try again.
+				
+			} catch (Exception e) {e.printStackTrace(); return false;} 
+			
+			jobQueueOC.remove(index);	// Dequeue the job.
+			return true;
+		}
 	}
 	
 	
