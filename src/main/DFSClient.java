@@ -56,6 +56,8 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface {
 		fileName = "";
 		hasOwnership = false;
 		
+		cleanFile();	// Clean out / initialize the local file cache.
+		
 		// TODO - Work in the user-prompt system.
 		//userPrompt();
 		
@@ -70,8 +72,7 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface {
 	
 	// Invalidate, an RMI method
 	public boolean invalidate() {
-		// TODO - I wonder if it'll stay this simple...
-		// Likely to require chmod use.
+		// TODO - Likely to require chmod use.
 		clientState = ClientState.Invalid;
 		return true;
 	}
@@ -108,6 +109,27 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface {
 	 */
 	private void userPrompt() {
 		// TODO - Write the user prompt loop method and handle the user account stuff
+		
+		/*
+		 * Okay, so basically gotta make the user prompts: First it states
+		 * what is the current file is "Test.txt" or whatever, if there is one.
+		 * Obviously, when it first starts this will be blank, there is no file.
+		 * So first it asks for what file you want. Catch bad values! Maybe look
+		 * for ways to allow only alphanumeric values. If the requested file
+		 * in the prompt is the same as the current file, then just open it
+		 * in emacs.
+		 * Then it asks which mode you want, r for read, w for write. Note that
+		 * all calls use lower-case semantics for the two modes.
+		 * Make sure to update all private information like accessMode and
+		 * fileName.
+		 * Update chmod based on results from pull file and push file.
+		 * Open the file with emacs.
+		 * 
+		 * Each cycle check for Ownership_Change for the purposes of writeback.
+		 * Handle null returns on download to block emacs access (through chmod).
+		 * I wonder how emacs reacts if you try to access a file with zero
+		 * permissions...
+		 * */
 	}
 	
 	
