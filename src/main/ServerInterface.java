@@ -2,7 +2,6 @@
 
 package main;
 import java.rmi.*;
-import java.util.*;
 
 /**Interface class for the DFSServer.
  * @author Kyle Geib
@@ -15,7 +14,7 @@ public interface ServerInterface extends Remote {
 	 * @return The contents of the file requested
 	 */
     public FileContents download(String clientIP, 
-    		String fileName, String mode);
+    		String fileName, String mode) throws RemoteException;
     
     /**Upload is called from a DFSClient and has a file sent to the Server.
      * @param clientIP
@@ -23,5 +22,6 @@ public interface ServerInterface extends Remote {
      * @param data
      * @return Whether or not the action was successful.
      */
-    public boolean upload(String clientIP, String fileName, FileContents data);
+    public boolean upload(String clientIP, 
+    		String fileName, FileContents data) throws RemoteException;
 }

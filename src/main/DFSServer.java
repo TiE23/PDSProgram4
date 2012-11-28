@@ -3,7 +3,8 @@
 package main;
 
 import java.rmi.*;
-import java.rmi.server.UnicastRemoteObject;
+import java.rmi.server.*;
+import java.util.Iterator;
 import java.util.Vector;
 import main.FileContainer.FileState;
 
@@ -24,6 +25,10 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 			this.clientIP = clientIP;
 			this.fileName = fileName;
 		}
+		
+		public void print() {
+			System.out.println(clientIP + ": " + fileName);
+		}
 	}
 	
 	private Vector<ClientContainer> jobQueueWS;
@@ -38,7 +43,12 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 	 * @throws RemoteException
 	 */
 	public DFSServer(String port) throws RemoteException {
+		jobQueueWS = new Vector<ClientContainer>();
+		jobQueueOC = new Vector<ClientContainer>();
+		
+		clientList = new Vector<ClientContainer>();
 		cache = new Vector<FileContainer>();
+		
 		this.port = port;
 	}
 	
@@ -47,16 +57,19 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 	public FileContents download(String clientIP, 
 			String fileName, String mode) {
 		
+		System.out.println("DOWNLOAD");
+		
 		// Check to see if this is a recognized clientIP.
-		if (0 < vectorCCSearch(clientList, clientIP)) {
+		if (vectorCCSearch(clientList, clientIP) == -1) {
 			// It isn't, so add the client and its file.
 			clientList.add(new ClientContainer(clientIP, fileName));
 		} else { // Recognized Client, update its latest file.
-			clientList.elementAt(vectorCCSearch(clientList, clientIP)).fileName = fileName;
+			clientList.elementAt(
+					vectorCCSearch(clientList, clientIP)).fileName = fileName;
 		}
 		
 		// Check to see if this is a recognized fileName.
-		if (0 < vectorFCSearch(cache, fileName)) {
+		if (vectorFCSearch(cache, fileName) != -1) {
 			
 			// Create a new File with fileName, the requesting client, and mode
 			FileContainer newFile = 
@@ -149,7 +162,9 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 	// RMI Upload function.
 	public boolean upload(String clientIP, String fileName, FileContents data){
 		
-		if (0 < vectorFCSearch(cache, fileName))
+		System.out.println("UPLOAD");
+		
+		if (vectorFCSearch(cache, fileName) == -1)
 			return false;	// This file isn't available!
 		
 		FileContainer file = cache.elementAt(vectorFCSearch(cache, fileName));
@@ -242,6 +257,9 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 	 * @return If the writeback was successful.
 	 */
 	private boolean callWriteback(String fileName) {
+		
+		if ( vectorFCSearch(cache, fileName) == -1 )
+			return false;
 		
 		String owner = cache.elementAt(vectorFCSearch(cache, fileName)).owner;
 		
@@ -362,7 +380,9 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 	 * @return The first element location of the result. -1 if missing.
 	 */
 	private int vectorFCSearch(Vector<FileContainer> vector, String name) {
+		System.out.println("FC");
 		for (int x = 0; x < vector.size(); ++x) {
+			vector.elementAt(x).print();
 			if (vector.elementAt(x).fileName.equals(name))
 				return x;
 		}
@@ -376,7 +396,9 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 	 * @return The first element location of the result. -1 if missing.
 	 */
 	private int vectorCCSearch(Vector<ClientContainer> vector, String name) {
+		System.out.println("CC");
 		for (int x = 0; x < vector.size(); ++x) {
+			vector.elementAt(x).print();
 			if (vector.elementAt(x).clientIP.equals(name))
 				return x;
 		}

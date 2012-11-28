@@ -3,9 +3,8 @@
 package main;
 
 import java.io.*;
-import java.net.MalformedURLException;
 import java.rmi.*;
-import java.rmi.server.UnicastRemoteObject;
+import java.rmi.server.*;
 
 /**DFS Client
  * @author Kyle Geib
@@ -59,7 +58,7 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface {
 		cleanFile();	// Clean out / initialize the local file cache.
 		
 		// TODO - Work in the user-prompt system.
-		//userPrompt();
+		userPrompt();
 		
 		
 		// TODO
@@ -108,7 +107,7 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface {
 	/**Performs the user prompting cycle in the console.
 	 */
 	private void userPrompt() {
-		// TODO - Write the user prompt loop method and handle the user account stuff
+		// TODO - Write the user prompt loop method stuff
 		
 		/*
 		 * Okay, so basically gotta make the user prompts: First it states
@@ -129,7 +128,71 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface {
 		 * Handle null returns on download to block emacs access (through chmod).
 		 * I wonder how emacs reacts if you try to access a file with zero
 		 * permissions...
+		 * 
 		 * */
+		
+		
+		/*
+		 * Instead, let's do a hard-written test to see if this stuff works.
+		 * */
+		
+		//
+		     
+		
+		try {
+			System.out.println("Pulling file for write...");
+			pullFile("Test01", "w");
+			System.out.println("Pulling file ended.");
+			
+			
+			System.out.println("chmod Starting...");
+			
+			Runtime runtime = Runtime.getRuntime( );   
+			Process chmod = runtime.exec("chmod 400 /tmp/" 
+					+ accountName + ".txt");	// Set to write mode.
+			chmod.waitFor();
+			
+			System.out.println("chmod completed");
+			
+			System.out.println("emacs starting...");
+			
+			Process emacs = runtime.exec("nano /tmp/" + accountName + ".txt");
+			emacs.waitFor();
+			
+			System.out.println("emacs returned!");
+
+			System.out.println("pushing file");
+			pushFile();
+			System.out.println("pushed");
+			
+			System.out.println("pulling for read");
+			pullFile("Test01", "r");
+			System.out.println("pulled");
+			
+			// REPEAT
+			System.out.println("chmod Starting...");
+			
+			//Runtime runtime2 = Runtime.getRuntime( );   
+			Process chmod2 = runtime.exec("chmod 400 /tmp/" 
+					+ accountName + ".txt");	// Set to write mode.
+			chmod2.waitFor();
+			
+			System.out.println("chmod completed");
+			
+			System.out.println("emacs starting...");
+			
+			Process emacs2 = runtime.exec("nano /tmp/" + accountName + ".txt");
+			emacs2.waitFor();
+			
+			System.out.println("emacs returned!");
+
+			System.out.println("pushing file");
+			pushFile();
+			System.out.println("pushed");
+			
+		} catch (Exception e) { e.printStackTrace();}
+		
+		System.out.println("done!");
 	}
 	
 	

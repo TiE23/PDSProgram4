@@ -73,4 +73,8 @@ public class FileContainer {
 		}
 			
 	}
+	
+	public void print() {
+		System.out.println("Name: " + fileName);
+	}
 }
