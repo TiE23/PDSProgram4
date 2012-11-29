@@ -55,17 +55,16 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface {
 		fileName = "";
 		hasOwnership = false;
 		
-		cleanFile();	// Clean out / initialize the local file cache.
+		cleanFile();	// Clean out and/or initialize the local file cache.
+		
+		// TODO 
+		/*Process threading will probably take place here, 
+		 * with userPrompt() going into its own thread to deal with user input
+		 * while the rest waits for RMI function calls from the server.
+		 * */
 		
 		// TODO - Work in the user-prompt system.
 		userPrompt();
-		
-		
-		// TODO
-		/* Attempting a server.download() call will need to handle 
-		 * null returns... which means that it has been suspended and 
-		 * will be fulfilled later.
-		 * */
 	}
 	
 	
@@ -131,13 +130,45 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface {
 		 * 
 		 * */
 		
+		// The prompting loop!
+		while (true) {
+			System.out.print("Current file: ");
+			if(fileName.equals("")) {	// Blank fileName (none)
+				System.out.println("None");
+			} else {
+				System.out.println(fileName);
+			}
+			
+			// Command line input
+			Console c = System.console();
+			String fileTarget = c.readLine("File name: ");
+			String mode = c.readLine("How(r/w): ");
+			
+			// Set to lower-case, functions use lower-case r and w
+			mode.toLowerCase();
+			
+			// TODO
+			/* Here is where most of the state-diagram mess comes in. 
+			 * A lot of if-else statements covering different options.
+			 * Remember to keep in mind that pullFile and pushFile only
+			 * perform the basics!
+			 * */
+			
+			// Check to see if the file is already in possession.
+			if (fileTarget.equals(fileName)) {
+				
+			}
+			
+			
+			
+		}
 		
 		/*
 		 * Instead, let's do a hard-written test to see if this stuff works.
 		 * */
 		
 		//
-		     
+		/*     
 		
 		try {
 			System.out.println("Pulling file for write...");
@@ -148,7 +179,7 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface {
 			System.out.println("chmod Starting...");
 			
 			Runtime runtime = Runtime.getRuntime( );   
-			Process chmod = runtime.exec("chmod 400 /tmp/" 
+			Process chmod = runtime.exec("chmod 600 /tmp/" 
 					+ accountName + ".txt");	// Set to write mode.
 			chmod.waitFor();
 			
@@ -191,7 +222,7 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface {
 			System.out.println("pushed");
 			
 		} catch (Exception e) { e.printStackTrace();}
-		
+		*/
 		System.out.println("done!");
 	}
 	
