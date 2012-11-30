@@ -18,7 +18,7 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface {
 	
 	/**Enum to track the access mode of the current file: read or write.*/
 	private enum AccessMode {
-		Read, Write, Undefined
+		Invalid, Read, Write
 	}
 	
 	private String accountName;			// The client account's name.
@@ -49,7 +49,7 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface {
 		this.port = port;
 		
 		clientState = ClientState.Invalid;
-		accessMode = AccessMode.Undefined;
+		accessMode = AccessMode.Invalid;
 		
 		fileContents = null;
 		fileName = "";
@@ -64,7 +64,9 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface {
 		 * */
 		
 		// TODO - Work in the user-prompt system.
-		userPrompt();
+		try {
+			userPrompt();
+		} catch (IOException e) {e.printStackTrace();}
 	}
 	
 	
@@ -91,10 +93,11 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface {
 		/* TODO - fileName is checked against the current file in the case 
 		 * that the user was impatient and decided to download something else 
 		 * instead of waiting.*/
-		
-		if (pullFile(fileName, "w")) {	// Successfully gained file.
 			
-			// Update information (pullFile only updates this.fileContents).
+		// Checks the name to make sure this is a file the client still wants.
+		if (this.fileName.equals(fileName) && pullFile(fileName, "w")) {	
+			
+			// Update information.
 			accessMode = AccessMode.Write;
 			clientState = ClientState.Write_Owned;
 			this.fileName = fileName;
@@ -104,8 +107,9 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface {
 	
 	
 	/**Performs the user prompting cycle in the console.
+	 * @throws IOException 
 	 */
-	private void userPrompt() {
+	private void userPrompt() throws IOException {
 		// TODO - Write the user prompt loop method stuff
 		
 		/*
@@ -132,8 +136,10 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface {
 		
 		// The prompting loop!
 		while (true) {
+			
 			System.out.print("Current file: ");
-			if(fileName.equals("")) {	// Blank fileName (none)
+			
+			if (clientState == ClientState.Invalid) {
 				System.out.println("None");
 			} else {
 				System.out.println(fileName);
@@ -154,13 +160,161 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface {
 			 * perform the basics!
 			 * */
 			
-			// Check to see if the file is already in possession.
-			if (fileTarget.equals(fileName)) {
+			switch (clientState) {	// State switch...
+			case Invalid:								// No file
+				if (mode.equals("r")) {					// Read mode
+					if (pullFile(fileTarget, mode)) {	// Success
+						hasOwnership = false;
+						accessMode = AccessMode.Read;
+						fileName = fileTarget;
+						clientState = ClientState.Read_Shared;
+						
+						writeToFile(fileContents.get());	// Write to file.
+						
+						// Use chmod to set to read mode (400).
+						Runtime runtime = Runtime.getRuntime( );   
+						Process chmod = runtime.exec("chmod 400 /tmp/" 
+								+ accountName + ".txt");
+						
+					} else {							// Failure
+						hasOwnership = false;
+						accessMode = AccessMode.Invalid;
+						fileName = fileTarget;
+						clientState = ClientState.Invalid;
+					}
+				} else {								// Write mode
+					if (pullFile(fileTarget, mode)) {	// Success
+						hasOwnership = true;
+						accessMode = AccessMode.Write;
+						fileName = fileTarget;
+						clientState = ClientState.Write_Owned;	// Next state
+						
+						writeToFile(fileContents.get());	// Write to file.
+						
+						// Use chmod to set to write mode (600).
+						Runtime runtime = Runtime.getRuntime( );   
+						Process chmod = runtime.exec("chmod 600 /tmp/" 
+								+ accountName + ".txt");
+						
+					} else {							// Failure
+						hasOwnership = false;
+						accessMode = AccessMode.Invalid;
+						fileName = fileTarget;
+						clientState = ClientState.Invalid;
+					}
+				}
+				break;
 				
+			case Read_Shared:							// Reading a file
+				if (mode.equals("r")) {					// Read mode
+					if (fileName.equals(fileTarget)) {	// Same file
+						// "Do nothing"
+						System.out.println("Using local file...");
+						
+					} else {							// Replace file
+						if (pullFile(fileTarget, mode)) {	// Success
+							hasOwnership = false;
+							accessMode = AccessMode.Read;
+							fileName = fileTarget;
+							clientState = ClientState.Read_Shared;
+							
+							writeToFile(fileContents.get());	// Write to file.
+							
+							// Use chmod to set to read mode (400).
+							Runtime runtime = Runtime.getRuntime( );   
+							Process chmod = runtime.exec("chmod 400 /tmp/" 
+									+ accountName + ".txt");
+							
+						} else {							// Failure
+							hasOwnership = false;
+							accessMode = AccessMode.Invalid;
+							fileName = fileTarget;
+							clientState = ClientState.Invalid;
+						}
+					}
+				} else {								// Write mode
+					/* Whether trying to write to the same file or a new one,
+					 * the actions taken are the same. */
+					
+					if (pullFile(fileTarget, mode)) {	// Success
+						hasOwnership = true;
+						accessMode = AccessMode.Write;
+						fileName = fileTarget;
+						clientState = ClientState.Write_Owned;	// Next state
+						
+						writeToFile(fileContents.get());	// Write to file.
+						
+						// Use chmod to set to write mode (600).
+						Runtime runtime = Runtime.getRuntime( );   
+						Process chmod = runtime.exec("chmod 600 /tmp/" 
+								+ accountName + ".txt");
+						
+					} else {							// Failure
+						hasOwnership = false;
+						accessMode = AccessMode.Invalid;
+						fileName = fileTarget;
+						clientState = ClientState.Invalid;
+					}
+				}
+				break;
+				
+			case Write_Owned:							// Writing a file
+				if (fileName.equals(fileTarget)) {		// Same file
+					// "Do nothing"
+					System.out.println("Using local file...");
+					
+				} else {
+					if (!pushFile()) {
+						System.err.println("Unable to upload file!");
+						break;	// This is bad.
+					}
+					
+					if (mode.equals("r")) {					// Read mode
+						
+						if (pullFile(fileTarget, mode)) {	// Success
+							hasOwnership = false;
+							accessMode = AccessMode.Read;
+							fileName = fileTarget;
+							clientState = ClientState.Read_Shared;
+						} else {							// Failure
+							hasOwnership = false;
+							accessMode = AccessMode.Invalid;
+							fileName = fileTarget;
+							clientState = ClientState.Invalid;
+						}
+					
+					} else {								// Write mode
+	
+						if (pullFile(fileTarget, mode)) {	// Success
+							hasOwnership = true;
+							accessMode = AccessMode.Read;
+							fileName = fileTarget;
+							clientState = ClientState.Read_Shared;
+						} else {							// Failure
+							
+						}
+					
+					}
+				}
+				break;
+				
+			case Release_Ownership:						// Need to release
+				if (mode.equals("r")) {					// Read mode
+					if (pullFile(fileTarget, mode)) {	// Success
+						
+					} else {							// Failure
+						
+					}
+				} else {								// Write mode
+					if (pullFile(fileTarget, mode)) {	// Success
+						
+					} else {							// Failure
+						
+					}
+				}
+				break;
 			}
-			
-			
-			
+
 		}
 		
 		/*
@@ -223,7 +377,6 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface {
 			
 		} catch (Exception e) { e.printStackTrace();}
 		*/
-		System.out.println("done!");
 	}
 	
 	
@@ -252,6 +405,7 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface {
 	
 	
 	/**Push performs an upload of the client's current file.
+	 * NOTE: Performs no other tasks other than to upload fileContents!!!
 	 * @return Success of the upload operation.
 	 */
 	private boolean pushFile() {
@@ -276,6 +430,11 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface {
 		cleanFile(); // Clean out the file that may exist or create a new one
 		
 		try {
+			
+			Runtime runtime = Runtime.getRuntime( );   
+			Process chmod = runtime.exec("chmod 600 /tmp/" 
+					+ accountName + ".txt");
+			
 			FileOutputStream fos = 
 					new FileOutputStream("tmp/" + accountName + ".txt");
 			fos.write(data);

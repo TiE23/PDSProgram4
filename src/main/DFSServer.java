@@ -83,32 +83,30 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 			// Get the requested file...
 			FileContainer file = cache.elementAt(vectorFCSearch(cache, fileName));
 			
-			if (file.fileState == FileState.Not_Shared) {
-				
+			switch (file.fileState) { 
+			
+			case Not_Shared:
 				// Add the client to the Readers list.
 				file.safeAddReader(clientIP);
 				file.fileState = FileState.Read_Shared;	// Next state.
 				
 				return file.data;
 				
-			} else if (file.fileState == FileState.Read_Shared) {
-				
+			case Read_Shared:
 				// Add the client to the Readers list.
 				file.safeAddReader(clientIP);
 				// No state change.
 				
 				return file.data;
 				
-			} else if (file.fileState == FileState.Write_Shared) {
-				
+			case Write_Shared:
 				// Add the client to the Readers list.
 				file.safeAddReader(clientIP);
 				// No state change.
 				
 				return file.data;
 				
-			} else if (file.fileState == FileState.Ownership_Change) {
-				
+			case Ownership_Change:
 				// Add the client to the Readers list.
 				file.safeAddReader(clientIP);
 				// No state change.
@@ -122,23 +120,23 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 			// Get the requested file...
 			FileContainer file = cache.elementAt(vectorFCSearch(cache, fileName));
 			
-			if (file.fileState == FileState.Not_Shared) {
-				
+			switch (file.fileState) { 
+			
+			case Not_Shared:
 				// Add the client to the Readers list.
 				file.owner = clientIP;
 				file.fileState = FileState.Write_Shared;	// Next state.
 				
 				return file.data;
 				
-			} else if (file.fileState == FileState.Read_Shared) {
-				
+			case Read_Shared:
 				// Add the client to the Readers list.
 				file.owner = clientIP;
 				file.fileState = FileState.Write_Shared;	// Next state.
 				
 				return file.data;
 				
-			} else if (file.fileState == FileState.Write_Shared) {
+			case Write_Shared:
 				/*Call the current owner's writeback() function, 
 				 * and thereafter suspends this download() function.*/
 				
@@ -147,7 +145,7 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 				
 				return null;
 				
-			} else if (file.fileState == FileState.Ownership_Change) {
+			case Ownership_Change:
 				/*Immediately suspend this download() function call.*/
 				suspendJobOC(clientIP, fileName);	// Suspend download().
 				
@@ -169,21 +167,19 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 		
 		FileContainer file = cache.elementAt(vectorFCSearch(cache, fileName));
 		
-		if (!file.owner.equals(clientIP)) {
-			
+		if (!file.owner.equals(clientIP)) 
 			return false;	// This client isn't the owner!
 		
-		} else if (file.fileState == FileState.Not_Shared) {
-			
+		switch (file.fileState) { 
+		
+		case Not_Shared:
 			return false;	// Unacceptable FileState!
 		
-		} else if (file.fileState == FileState.Read_Shared) {
-			
+		case Read_Shared:
 			file.fileState = FileState.Not_Shared;	// Next state.
 			return false;	// Unacceptable FileState!
 			
-		} else if (file.fileState == FileState.Write_Shared) {
-			
+		case Write_Shared:
 			file.fileState = FileState.Not_Shared;	// Next state.
 			
 			invalidateAll(file);	// Invalidate all readers.
@@ -192,8 +188,7 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 			
 			return true;
 			
-		} else if (file.fileState == FileState.Ownership_Change) {
-			
+		case Ownership_Change:
 			file.fileState = FileState.Write_Shared;	// Next state.
 			file.data = data;	// Update file's contents.
 			
