@@ -26,8 +26,8 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 			this.fileName = fileName;
 		}
 		
-		public void print() {
-			System.out.println(clientIP + ": " + fileName);
+		public void print(String message) {
+			System.out.println(message + "-> " + clientIP + ": " + fileName);
 		}
 	}
 	
@@ -216,7 +216,7 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 	 * @throws Exception
 	 */
 	private void invalidateAll(FileContainer file) {
-		
+		System.out.println("invalidateAll(" + file + ")");
 		for (int x = 0; x < file.readers.size(); ++x) {
 			String clientName = file.readers.elementAt(x);
 			try {
@@ -282,7 +282,7 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 	 * @return
 	 */
 	private boolean suspendJobWS(String clientIP, String fileName) {
-		
+		System.out.println("Suspending WS job for " + clientIP + " using " + fileName);
 		// Add to job queue.
 		jobQueueWS.add(new ClientContainer(clientIP, fileName));
 		
@@ -299,7 +299,7 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 	 * @return
 	 */
 	private boolean suspendJobOC(String clientIP, String fileName) {
-		
+		System.out.println("Suspending OC job for " + clientIP + " using " + fileName);
 		// Add to job queue.
 		jobQueueOC.add(new ClientContainer(clientIP, fileName));
 		
@@ -375,9 +375,8 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 	 * @return The first element location of the result. -1 if missing.
 	 */
 	private int vectorFCSearch(Vector<FileContainer> vector, String name) {
-		System.out.println("FC");
 		for (int x = 0; x < vector.size(); ++x) {
-			vector.elementAt(x).print();
+			vector.elementAt(x).print("FCSearch #" + x);
 			if (vector.elementAt(x).fileName.equals(name))
 				return x;
 		}
@@ -391,9 +390,8 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 	 * @return The first element location of the result. -1 if missing.
 	 */
 	private int vectorCCSearch(Vector<ClientContainer> vector, String name) {
-		System.out.println("CC");
 		for (int x = 0; x < vector.size(); ++x) {
-			vector.elementAt(x).print();
+			vector.elementAt(x).print("CCSearch #" + x);
 			if (vector.elementAt(x).clientIP.equals(name))
 				return x;
 		}

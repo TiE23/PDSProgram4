@@ -62,8 +62,7 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface {
 		 * with userPrompt() going into its own thread to deal with user input
 		 * while the rest waits for RMI function calls from the server.
 		 * */
-		
-		// TODO - Work in the user-prompt system.
+
 		try {
 			userPrompt();
 		} catch (IOException e) {e.printStackTrace();}
@@ -90,18 +89,11 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface {
 	
 	// Resume, an RMI method.
 	public void resume(String fileName) {
-		/* TODO - fileName is checked against the current file in the case 
-		 * that the user was impatient and decided to download something else 
-		 * instead of waiting.*/
-			
 		// Checks the name to make sure this is a file the client still wants.
 		if (this.fileName.equals(fileName) && pullFile(fileName, "w")) {	
 			
-			// Update information.
-			accessMode = AccessMode.Write;
+			// Update state.
 			clientState = ClientState.Write_Owned;
-			this.fileName = fileName;
-			hasOwnership = true;
 		}
 	}
 	
@@ -147,11 +139,26 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface {
 			
 			// Command line input
 			Console c = System.console();
-			String fileTarget = c.readLine("File name: ");
-			String mode = c.readLine("How(r/w): ");
+			boolean acceptable = false;
+			String fileTarget = "";
+			String mode = "";
 			
-			// Set to lower-case, functions use lower-case r and w
-			mode.toLowerCase();
+			while (!acceptable) {
+				fileTarget = c.readLine("File name: ");
+				mode = c.readLine("How(r/w): ");
+				
+				// Set to lower-case, functions use lower-case r and w
+				mode.toLowerCase();
+				
+				// World-class input checking.
+				if ( fileTarget.length() != 0 && 
+						(mode.equals("r") || mode.equals("w")) )
+					acceptable = true;
+				else 
+					System.out.println("Try putting a valid command this time...");
+			}
+			
+			
 			
 			// TODO
 			/* Here is where most of the state-diagram mess comes in. 
@@ -164,9 +171,6 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface {
 			case Invalid:								// No file
 				if (mode.equals("r")) {					// Read mode
 					if (pullFile(fileTarget, mode)) {	// Success
-						hasOwnership = false;
-						accessMode = AccessMode.Read;
-						fileName = fileTarget;
 						clientState = ClientState.Read_Shared;
 						
 						writeToFile(fileContents.get());	// Write to file.
@@ -177,16 +181,10 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface {
 								+ accountName + ".txt");
 						
 					} else {							// Failure
-						hasOwnership = false;
-						accessMode = AccessMode.Invalid;
-						fileName = fileTarget;
 						clientState = ClientState.Invalid;
 					}
 				} else {								// Write mode
 					if (pullFile(fileTarget, mode)) {	// Success
-						hasOwnership = true;
-						accessMode = AccessMode.Write;
-						fileName = fileTarget;
 						clientState = ClientState.Write_Owned;	// Next state
 						
 						writeToFile(fileContents.get());	// Write to file.
@@ -197,9 +195,6 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface {
 								+ accountName + ".txt");
 						
 					} else {							// Failure
-						hasOwnership = false;
-						accessMode = AccessMode.Invalid;
-						fileName = fileTarget;
 						clientState = ClientState.Invalid;
 					}
 				}
@@ -213,9 +208,6 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface {
 						
 					} else {							// Replace file
 						if (pullFile(fileTarget, mode)) {	// Success
-							hasOwnership = false;
-							accessMode = AccessMode.Read;
-							fileName = fileTarget;
 							clientState = ClientState.Read_Shared;
 							
 							writeToFile(fileContents.get());	// Write to file.
@@ -226,9 +218,6 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface {
 									+ accountName + ".txt");
 							
 						} else {							// Failure
-							hasOwnership = false;
-							accessMode = AccessMode.Invalid;
-							fileName = fileTarget;
 							clientState = ClientState.Invalid;
 						}
 					}
@@ -237,9 +226,6 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface {
 					 * the actions taken are the same. */
 					
 					if (pullFile(fileTarget, mode)) {	// Success
-						hasOwnership = true;
-						accessMode = AccessMode.Write;
-						fileName = fileTarget;
 						clientState = ClientState.Write_Owned;	// Next state
 						
 						writeToFile(fileContents.get());	// Write to file.
@@ -250,9 +236,6 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface {
 								+ accountName + ".txt");
 						
 					} else {							// Failure
-						hasOwnership = false;
-						accessMode = AccessMode.Invalid;
-						fileName = fileTarget;
 						clientState = ClientState.Invalid;
 					}
 				}
@@ -267,121 +250,64 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface {
 					if (!pushFile()) {
 						System.err.println("Unable to upload file!");
 						break;	// This is bad.
+					} else {
+						accessMode = AccessMode.Invalid;
+						clientState = ClientState.Invalid;
 					}
 					
 					if (mode.equals("r")) {					// Read mode
 						
 						if (pullFile(fileTarget, mode)) {	// Success
-							hasOwnership = false;
-							accessMode = AccessMode.Read;
-							fileName = fileTarget;
 							clientState = ClientState.Read_Shared;
+							
+							writeToFile(fileContents.get());	// Write to file.
+							
+							// Use chmod to set to read mode (400).
+							Runtime runtime = Runtime.getRuntime( );   
+							Process chmod = runtime.exec("chmod 400 /tmp/" 
+									+ accountName + ".txt");
+							
 						} else {							// Failure
-							hasOwnership = false;
-							accessMode = AccessMode.Invalid;
-							fileName = fileTarget;
 							clientState = ClientState.Invalid;
 						}
 					
 					} else {								// Write mode
 	
 						if (pullFile(fileTarget, mode)) {	// Success
-							hasOwnership = true;
-							accessMode = AccessMode.Read;
-							fileName = fileTarget;
-							clientState = ClientState.Read_Shared;
-						} else {							// Failure
+							clientState = ClientState.Write_Owned;
 							
+							writeToFile(fileContents.get());	// Write to file.
+							
+							// Use chmod to set to write mode (600).
+							Runtime runtime = Runtime.getRuntime( );   
+							Process chmod = runtime.exec("chmod 600 /tmp/" 
+									+ accountName + ".txt");
+							
+						} else {							// Failure
+							clientState = ClientState.Invalid;
 						}
-					
 					}
 				}
 				break;
 				
 			case Release_Ownership:						// Need to release
-				if (mode.equals("r")) {					// Read mode
-					if (pullFile(fileTarget, mode)) {	// Success
-						
-					} else {							// Failure
-						
-					}
-				} else {								// Write mode
-					if (pullFile(fileTarget, mode)) {	// Success
-						
-					} else {							// Failure
-						
-					}
-				}
+				// This shouldn't happen if the threads worked correctly
+				System.err.println("Writeback Function hasn't executed " +
+						"properly! You may want to restart this program.");
+				String response = c.readLine(
+						"Continue anyway by abandoning file? (y/n): ");
+				// TODO Put a clean file and some other things here if possible...
 				break;
 			}
-
+			System.out.println(
+					"\nPlease use emacs with your file at this time...\n");
 		}
 		
-		/*
-		 * Instead, let's do a hard-written test to see if this stuff works.
-		 * */
-		
-		//
-		/*     
-		
-		try {
-			System.out.println("Pulling file for write...");
-			pullFile("Test01", "w");
-			System.out.println("Pulling file ended.");
-			
-			
-			System.out.println("chmod Starting...");
-			
-			Runtime runtime = Runtime.getRuntime( );   
-			Process chmod = runtime.exec("chmod 600 /tmp/" 
-					+ accountName + ".txt");	// Set to write mode.
-			chmod.waitFor();
-			
-			System.out.println("chmod completed");
-			
-			System.out.println("emacs starting...");
-			
-			Process emacs = runtime.exec("nano /tmp/" + accountName + ".txt");
-			emacs.waitFor();
-			
-			System.out.println("emacs returned!");
-
-			System.out.println("pushing file");
-			pushFile();
-			System.out.println("pushed");
-			
-			System.out.println("pulling for read");
-			pullFile("Test01", "r");
-			System.out.println("pulled");
-			
-			// REPEAT
-			System.out.println("chmod Starting...");
-			
-			//Runtime runtime2 = Runtime.getRuntime( );   
-			Process chmod2 = runtime.exec("chmod 400 /tmp/" 
-					+ accountName + ".txt");	// Set to write mode.
-			chmod2.waitFor();
-			
-			System.out.println("chmod completed");
-			
-			System.out.println("emacs starting...");
-			
-			Process emacs2 = runtime.exec("nano /tmp/" + accountName + ".txt");
-			emacs2.waitFor();
-			
-			System.out.println("emacs returned!");
-
-			System.out.println("pushing file");
-			pushFile();
-			System.out.println("pushed");
-			
-		} catch (Exception e) { e.printStackTrace();}
-		*/
 	}
 	
 	
 	/**Pull performs a download on a requested file from the server.
-	 * NOTE: Performs no other tasks other than to update fileContents!!!
+	 * NOTE: Does not update the clientState.
 	 * @param fileName
 	 * @param mode "r" for read. "w" for write.
 	 * @return Success of the download. False means no change: likely suspended
@@ -394,10 +320,27 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface {
 			
 			FileContents returnFile = server.download(clientIP, fileName, mode); 
 			
-			if (returnFile == null)
+			// This will be the new file...
+			this.fileName = fileName;
+			
+			if (returnFile == null) {	// Failure
+				hasOwnership = false;
+				accessMode = AccessMode.Invalid;
 				return false;
-			else {
-				fileContents = returnFile;	// Only changes fileContents!
+				
+			} else {					// Success
+				
+				fileContents = returnFile;	// Update fileContents
+				
+				if (mode.equals("r")) {	// Read mode
+					hasOwnership = false;
+					accessMode = AccessMode.Read;
+					
+				} else {				// Write mode
+					hasOwnership = true;
+					accessMode = AccessMode.Write;
+				}
+				
 				return true;
 			}
 		} catch (Exception e) {e.printStackTrace(); return false;}

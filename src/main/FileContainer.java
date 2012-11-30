@@ -74,7 +74,7 @@ public class FileContainer {
 			
 	}
 	
-	public void print() {
-		System.out.println("Name: " + fileName);
+	public void print(String message) {
+		System.out.println(message + "--> Name: " + fileName);
 	}
 }
