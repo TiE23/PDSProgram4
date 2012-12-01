@@ -1,10 +1,9 @@
-// Kyle Geib - Program 4 - CSS434 Fall 2012 - Dr Fukuda - November 13rd 2012
+// Kyle Geib - Program 4 - CSS434 Fall 2012 - Dr Fukuda - December 13th 2012
 
 package main;
 
 import java.rmi.*;
 import java.rmi.server.*;
-import java.util.Iterator;
 import java.util.Vector;
 import main.FileContainer.FileState;
 
@@ -27,7 +26,7 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 		}
 		
 		public void print(String message) {
-			System.out.println(message + "-> " + clientIP + ": " + fileName);
+			System.out.println(message + "--> " + clientIP + ": " + fileName);
 		}
 	}
 	
@@ -57,20 +56,24 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 	public FileContents download(String clientIP, 
 			String fileName, String mode) {
 		
-		System.out.println("DOWNLOAD");
+		System.out.println("DOWNLOAD: " + clientIP + ", " + fileName + ", " + mode);
 		
 		// Check to see if this is a recognized clientIP.
-		if (vectorCCSearch(clientList, clientIP) == -1) {
+		int clientIndex = vectorCCcnSearch(clientList, clientIP);
+		if (clientIndex == -1) {
 			// It isn't, so add the client and its file.
+			System.out.println("Adding client " + clientIP);
 			clientList.add(new ClientContainer(clientIP, fileName));
 		} else { // Recognized Client, update its latest file.
-			clientList.elementAt(
-					vectorCCSearch(clientList, clientIP)).fileName = fileName;
+			System.out.println("Updating client " + clientIP + " with " + fileName);
+			clientList.elementAt(clientIndex).fileName = fileName;
 		}
 		
 		// Check to see if this is a recognized fileName.
-		if (vectorFCSearch(cache, fileName) != -1) {
-			
+		int fileIndex = vectorFCSearch(cache, fileName);
+		
+		if (fileIndex == -1) {	// File doesn't exist!
+			System.out.println("File " + fileName + " being added");
 			// Create a new File with fileName, the requesting client, and mode
 			FileContainer newFile = 
 					new FileContainer(fileName, clientIP, mode);
@@ -78,78 +81,81 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 			cache.add(newFile);		// Add it to the cache
 			return newFile.data;	// return the FileContents
 			
-		} else if (mode.equals('r')) {	// File exists, requests READ!
+		} else {
+			if (mode.equals('r')) {	// File exists, requests READ!
+		
+				System.out.println("Recognized file, read");
+				// Get the requested file...
+				FileContainer file = cache.elementAt(fileIndex);
+				
+				switch (file.fileState) { 
+				
+				case Not_Shared:
+					// Add the client to the Readers list.
+					file.safeAddReader(clientIP);
+					file.fileState = FileState.Read_Shared;	// Next state.
+					System.out.println("RNS");
+					return file.data;
+					
+				case Read_Shared:
+					// Add the client to the Readers list.
+					file.safeAddReader(clientIP);
+					// No state change.
+					System.out.println("RRS");
+					return file.data;
+					
+				case Write_Shared:
+					// Add the client to the Readers list.
+					file.safeAddReader(clientIP);
+					// No state change.
+					System.out.println("RWS");
+					return file.data;
+					
+				case Ownership_Change:
+					// Add the client to the Readers list.
+					file.safeAddReader(clientIP);
+					// No state change.
+					System.out.println("ROC");
+					return file.data;
+				}
 			
-			// Get the requested file...
-			FileContainer file = cache.elementAt(vectorFCSearch(cache, fileName));
 			
-			switch (file.fileState) { 
-			
-			case Not_Shared:
-				// Add the client to the Readers list.
-				file.safeAddReader(clientIP);
-				file.fileState = FileState.Read_Shared;	// Next state.
+			} else {				// File exists, requests WRITE!
+				System.out.println("Recognized file, write");
+				// Get the requested file...
+				FileContainer file = cache.elementAt(fileIndex);
 				
-				return file.data;
+				switch (file.fileState) { 
 				
-			case Read_Shared:
-				// Add the client to the Readers list.
-				file.safeAddReader(clientIP);
-				// No state change.
-				
-				return file.data;
-				
-			case Write_Shared:
-				// Add the client to the Readers list.
-				file.safeAddReader(clientIP);
-				// No state change.
-				
-				return file.data;
-				
-			case Ownership_Change:
-				// Add the client to the Readers list.
-				file.safeAddReader(clientIP);
-				// No state change.
-				
-				return file.data;
-			}
-			
-			
-		} else if (mode.equals('w')){	// File exists, requests WRITE!
-			
-			// Get the requested file...
-			FileContainer file = cache.elementAt(vectorFCSearch(cache, fileName));
-			
-			switch (file.fileState) { 
-			
-			case Not_Shared:
-				// Add the client to the Readers list.
-				file.owner = clientIP;
-				file.fileState = FileState.Write_Shared;	// Next state.
-				
-				return file.data;
-				
-			case Read_Shared:
-				// Add the client to the Readers list.
-				file.owner = clientIP;
-				file.fileState = FileState.Write_Shared;	// Next state.
-				
-				return file.data;
-				
-			case Write_Shared:
-				/*Call the current owner's writeback() function, 
-				 * and thereafter suspends this download() function.*/
-				
-				callWriteback(fileName);			// Make writeback call.
-				suspendJobWS(clientIP, fileName);	// Suspend download().
-				
-				return null;
-				
-			case Ownership_Change:
-				/*Immediately suspend this download() function call.*/
-				suspendJobOC(clientIP, fileName);	// Suspend download().
-				
-				return null;
+				case Not_Shared:
+					// Add the client as the owner.
+					file.owner = clientIP;
+					file.fileState = FileState.Write_Shared;	// Next state.
+					System.out.println("WNS");
+					return file.data;
+					
+				case Read_Shared:
+					// Add the client as the owner.
+					file.owner = clientIP;
+					file.fileState = FileState.Write_Shared;	// Next state.
+					System.out.println("WRS");
+					return file.data;
+					
+				case Write_Shared:
+					/*Call the current owner's writeback() function, 
+					 * and thereafter suspends this download() function.*/
+					
+					callWriteback(fileName);			// Make writeback call.
+					suspendJobWS(clientIP, fileName);	// Suspend download().
+					System.out.println("WWS");
+					return null;
+					
+				case Ownership_Change:
+					/*Immediately suspend this download() function call.*/
+					suspendJobOC(clientIP, fileName);	// Suspend download().
+					System.out.println("WOC");
+					return null;
+				}
 			}
 		}
 		
@@ -160,23 +166,30 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 	// RMI Upload function.
 	public boolean upload(String clientIP, String fileName, FileContents data){
 		
-		System.out.println("UPLOAD");
+		System.out.println("UPLOAD: " + clientIP + ", " + fileName);
 		
-		if (vectorFCSearch(cache, fileName) == -1)
+		int fileIndex = vectorFCSearch(cache, fileName);
+		if (fileIndex == -1) {
+			System.out.println("Upload - unrecognized file");
 			return false;	// This file isn't available!
+		}
 		
-		FileContainer file = cache.elementAt(vectorFCSearch(cache, fileName));
+		FileContainer file = cache.elementAt(fileIndex);
 		
-		if (!file.owner.equals(clientIP)) 
+		if (!file.owner.equals(clientIP)) {
+			System.out.println("client isn't the owner!");
 			return false;	// This client isn't the owner!
-		
+		}
+			
 		switch (file.fileState) { 
 		
 		case Not_Shared:
+			System.out.println("NS");
 			return false;	// Unacceptable FileState!
 		
 		case Read_Shared:
 			file.fileState = FileState.Not_Shared;	// Next state.
+			System.out.println("RS");
 			return false;	// Unacceptable FileState!
 			
 		case Write_Shared:
@@ -184,17 +197,14 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 			
 			invalidateAll(file);	// Invalidate all readers.
 			file.data = data;	// Update file's contents.
-			
-			
+			System.out.println("WS");
 			return true;
 			
 		case Ownership_Change:
 			file.fileState = FileState.Write_Shared;	// Next state.
 			file.data = data;	// Update file's contents.
 			
-			try {
-				invalidateAll(file);	// Invalidate all readers.
-			} catch (Exception e) { e.printStackTrace(); }
+			invalidateAll(file);	// Invalidate all readers.
 			
 			file.owner = clientIP;	// Update owner.
 			
@@ -203,7 +213,7 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 			
 			// Resume download suspended in Ownership_Change.
 			resumeJobOC(fileName);	
-			
+			System.out.println("OC");
 			return true;
 		}
 		return false;
@@ -216,7 +226,7 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 	 * @throws Exception
 	 */
 	private void invalidateAll(FileContainer file) {
-		System.out.println("invalidateAll(" + file + ")");
+		System.out.println("invalidateAll(" + file.fileName + ")");
 		for (int x = 0; x < file.readers.size(); ++x) {
 			String clientName = file.readers.elementAt(x);
 			try {
@@ -225,14 +235,14 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 				 * to see if it's last used file matches the one we're seeking
 				 * to invalidate on client machines. */
 				if ( clientList.elementAt(
-						vectorCCSearch(clientList, clientName)).
+						vectorCCcnSearch(clientList, clientName)).
 						fileName.equals(file.fileName) ) {
 					
 					try {
 						ClientInterface client = (ClientInterface)
 									Naming.lookup("rmi://" + clientName +
 											":" + port + "/dfsclient");
-						
+						System.out.println("Invalidating " + clientName);
 						client.invalidate();	// Invalidate!
 						
 					} catch (Exception e) {e.printStackTrace();} 
@@ -252,11 +262,12 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 	 * @return If the writeback was successful.
 	 */
 	private boolean callWriteback(String fileName) {
-		
-		if ( vectorFCSearch(cache, fileName) == -1 )
+		System.out.println("callWriteback(" + fileName + ")");
+		int fileIndex = vectorFCSearch(cache, fileName);
+		if ( fileIndex == -1 )
 			return false;
 		
-		String owner = cache.elementAt(vectorFCSearch(cache, fileName)).owner;
+		String owner = cache.elementAt(fileIndex).owner;
 		
 		if (!owner.equals("")) {	// Make sure this file has a listed owner.
 			try {
@@ -283,6 +294,12 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 	 */
 	private boolean suspendJobWS(String clientIP, String fileName) {
 		System.out.println("Suspending WS job for " + clientIP + " using " + fileName);
+		
+		int index = vectorCCcnSearch(jobQueueWS, clientIP);
+		if (index != 1) // Client already has a job waiting on this list
+			jobQueueWS.remove(index);	// Remove the job (to replace it)
+		
+		
 		// Add to job queue.
 		jobQueueWS.add(new ClientContainer(clientIP, fileName));
 		
@@ -300,6 +317,11 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 	 */
 	private boolean suspendJobOC(String clientIP, String fileName) {
 		System.out.println("Suspending OC job for " + clientIP + " using " + fileName);
+		
+		int index = vectorCCcnSearch(jobQueueOC, clientIP);
+		if (index != 1) // Client already has a job waiting on this list
+			jobQueueOC.remove(index);	// Remove the job (to replace it)
+		
 		// Add to job queue.
 		jobQueueOC.add(new ClientContainer(clientIP, fileName));
 		
@@ -313,9 +335,9 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 	 */
 	private boolean resumeJobWS(String fileName) {
 
-		int index = vectorCCSearch(jobQueueWS, fileName);
+		int index = vectorCCfnSearch(jobQueueWS, fileName);
 		
-		if (index < 0 ) {
+		if (index == -1 ) {
 			return false;	// No such job exists! (This is bad!)
 			
 		} else {
@@ -345,9 +367,9 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 	 */
 	private boolean resumeJobOC(String fileName) {
 		
-		int index = vectorCCSearch(jobQueueOC, fileName);
+		int index = vectorCCfnSearch(jobQueueOC, fileName);
 		
-		if (index < 0 ) {
+		if (index == -1) {
 			return false;	// No such job exists! (This is bad!)
 			
 		} else {
@@ -376,7 +398,7 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 	 */
 	private int vectorFCSearch(Vector<FileContainer> vector, String name) {
 		for (int x = 0; x < vector.size(); ++x) {
-			vector.elementAt(x).print("FCSearch #" + x);
+			/////vector.elementAt(x).print("FCSearch #" + x); 	/////////debug
 			if (vector.elementAt(x).fileName.equals(name))
 				return x;
 		}
@@ -386,13 +408,30 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 	
 	/**Manual search through a vector for a matching client name.
 	 * @param vector The vector to search through.
-	 * @param name The target name that we're searching for.
+	 * @param name The target clientName that we're searching for.
 	 * @return The first element location of the result. -1 if missing.
 	 */
-	private int vectorCCSearch(Vector<ClientContainer> vector, String name) {
+	private int vectorCCcnSearch(Vector<ClientContainer> vector, 
+			String clientName) {
 		for (int x = 0; x < vector.size(); ++x) {
-			vector.elementAt(x).print("CCSearch #" + x);
-			if (vector.elementAt(x).clientIP.equals(name))
+			/////vector.elementAt(x).print("CCSearch #" + x);	/////////debug
+			if (vector.elementAt(x).clientIP.equals(clientName))
+				return x;
+		}
+		return -1;
+	}
+	
+	
+	/**Manual search through a vector for a matching file name.
+	 * @param vector The vector to search through.
+	 * @param name The target file name that we're searching for.
+	 * @return The first element location of the result. -1 if missing.
+	 */
+	private int vectorCCfnSearch(Vector<ClientContainer> vector, 
+			String fileName) {
+		for (int x = 0; x < vector.size(); ++x) {
+			/////vector.elementAt(x).print("FJSearch #" + x);	/////////debug
+			if (vector.elementAt(x).fileName.equals(fileName))
 				return x;
 		}
 		return -1;
