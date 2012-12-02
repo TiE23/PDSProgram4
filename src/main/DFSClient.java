@@ -69,7 +69,7 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 	// Invalidate, an RMI method
 	public boolean invalidate() {
 		
-		System.out.println("RMI: invalidate()");
+		System.out.println(">>>> RMI: invalidate()");
 		clientState = ClientState.Invalid;	// Change state to invalid.
 		
 		try {
@@ -84,7 +84,7 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 	
 	// Writeback, an RMI method
 	public boolean writeback() {
-		System.out.println("RMI: writeback()");
+		System.out.println(">>>> RMI: writeback()");
 		if (clientState == ClientState.Write_Owned) {
 			clientState = ClientState.Release_Ownership;
 			return true;	// Change state. Return successful result.
@@ -95,7 +95,7 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 	
 	// Resume, an RMI method.
 	public void resume(String fileName) {
-		System.out.println("RMI: resume()");
+		System.out.println(">>>> RMI: resume()");
 		// Checks the name to make sure this is a file the client still wants.
 		if (this.fileName.equals(fileName) && pullFile(fileName, "w")) {	
 			
@@ -119,8 +119,8 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 			
 			if (clientState == ClientState.Release_Ownership) {
 				
-				System.out.println("++++ Server requests ownership release of "
-						+ fileName + " ++++");
+				System.out.println("    Server requests ownership release of "
+						+ fileName);
 				
 				if (pushFile()) {
 					// Use chmod to set to read mode (400).
@@ -128,7 +128,7 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 					clientState = ClientState.Read_Shared;
 					accessMode = AccessMode.Read;
 				} else {
-					System.err.println("Unable to upload file!");
+					System.err.println("    Unable to upload file!");
 					break;	// This is bad.
 				}
 			}
@@ -167,7 +167,8 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 					System.out.println("Try putting a valid command this time...");
 			}
 			
-			switch (clientState) {	// State switch...
+			// State switch...
+			switch (clientState) {	
 			case Invalid:								// No file
 				if (mode.equals("r")) {					// Read mode
 					if (pullFile(fileTarget, mode)) {	// Success
@@ -179,7 +180,7 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 						chmod("400");
 						
 					} else {							// Failure
-						System.out.println("--Download failed, try again!");
+						System.out.println("    Download failed, try again!");
 						clientState = ClientState.Invalid;
 					}
 				} else {								// Write mode
@@ -192,7 +193,7 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 						chmod("600");
 						
 					} else {							// Failure
-						System.out.println("--Download failed, try again!");
+						System.out.println("    Download failed, try again!");
 						clientState = ClientState.Invalid;
 					}
 				}
@@ -214,7 +215,7 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 							chmod("400");
 							
 						} else {							// Failure
-							System.out.println("--Download failed, try again!");
+							System.out.println("    Download failed, try again!");
 							clientState = ClientState.Invalid;
 						}
 					}
@@ -231,7 +232,7 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 						chmod("600");
 						
 					} else {							// Failure
-						System.out.println("--Download failed, try again!");
+						System.out.println("    Download failed, try again!");
 						clientState = ClientState.Invalid;
 					}
 				}
@@ -240,7 +241,7 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 			case Write_Owned:							// Writing a file
 				if (fileName.equals(fileTarget)) {		// Same file
 					// "Do nothing"
-					System.out.println("Using local file...");
+					System.out.println("    Using local file...");
 					
 				} else {
 					if (pushFile()) {
@@ -262,7 +263,7 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 							chmod("400");
 							
 						} else {							// Failure
-							System.out.println("--Download failed, try again!");
+							System.out.println("    Download failed, try again!");
 							clientState = ClientState.Invalid;
 						}
 					
@@ -277,7 +278,7 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 							chmod("600");
 							
 						} else {							// Failure
-							System.out.println("--Download failed, try again!");
+							System.out.println("    Download failed, try again!");
 							clientState = ClientState.Invalid;
 						}
 					}
@@ -286,10 +287,10 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 				
 			case Release_Ownership:						// Need to release
 			
-				System.out.println("++++ Server requests ownership release of "
-						+ fileName + " ++++");
-				System.out.println("---- Sorry, but your last request for " 
-						+ fileTarget + " has been ignored. ----");
+				System.out.println("    Server requests ownership release of "
+						+ fileName);
+				System.out.println("    Sorry, but your last request for " 
+						+ fileTarget + " has been ignored.");
 				
 				if (pushFile()) {
 					// Use chmod to set to read mode (400).
@@ -338,9 +339,6 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 				return false;
 				
 			} else {					// Success
-				
-				System.out.println("return: " + returnFile.get() );
-				
 				fileContents = returnFile;	// Update fileContents
 				
 				if (mode.equals("r")) {	// Read mode
@@ -372,6 +370,8 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 			ServerInterface server = (ServerInterface) 
 					Naming.lookup("rmi://" + serverIP + 
 							":" + port + "/dfsserver");
+			
+			hasOwnership = false;
 			
 			// Upload the contents of this client's file.
 			return server.upload(clientIP, fileName, fileContents);

@@ -194,9 +194,12 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 			
 		case Write_Shared:
 			file.fileState = FileState.Not_Shared;	// Next state.
-			
-			invalidateAll(file);	// Invalidate all readers.
 			file.data = data;	// Update file's contents.
+			
+			invalidateAll(file);// Invalidate all readers.
+			
+			file.owner = "";	// Remove owner.
+			
 			System.out.println("WS");
 			return true;
 			
@@ -206,13 +209,14 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 			
 			invalidateAll(file);	// Invalidate all readers.
 			
-			file.owner = clientIP;	// Update owner.
+			// No change in ownership.
 			
 			// Resume download suspended in Write_Shared.
 			resumeJobWS(fileName);	
 			
 			// Resume download suspended in Ownership_Change.
 			resumeJobOC(fileName);	
+			
 			System.out.println("OC");
 			return true;
 		}
@@ -279,7 +283,7 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 			
 			} catch (Exception e) {e.printStackTrace(); return false;}
 			
-		} else						// File has no owner!
+		} else	// File has no owner, thus, the file must be sync'd.
 			return false;
 	}
 	
@@ -296,7 +300,7 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 		System.out.println("Suspending WS job for " + clientIP + " using " + fileName);
 		
 		int index = vectorCCcnSearch(jobQueueWS, clientIP);
-		if (index != 1) // Client already has a job waiting on this list
+		if (index != -1) // Client already has a job waiting on this list
 			jobQueueWS.remove(index);	// Remove the job (to replace it)
 		
 		
@@ -319,7 +323,7 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 		System.out.println("Suspending OC job for " + clientIP + " using " + fileName);
 		
 		int index = vectorCCcnSearch(jobQueueOC, clientIP);
-		if (index != 1) // Client already has a job waiting on this list
+		if (index != -1) // Client already has a job waiting on this list
 			jobQueueOC.remove(index);	// Remove the job (to replace it)
 		
 		// Add to job queue.
