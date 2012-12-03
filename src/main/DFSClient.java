@@ -114,8 +114,11 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 	 */
 	private void userPrompt() throws IOException {
 
+		boolean fileReady;
+		
 		// The prompting loop
 		while (true) {
+			fileReady = true;
 			
 			if (clientState == ClientState.Release_Ownership) {
 				
@@ -292,6 +295,8 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 				System.out.println("    Sorry, but your last request for " 
 						+ fileTarget + " has been ignored.");
 				
+				fileReady = false;
+				
 				if (pushFile()) {
 					// Use chmod to set to read mode (400).
 					chmod("400");
@@ -304,6 +309,13 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 			
 				break;
 			}
+			
+			/* 	emacs for linux execution!!!!
+			if (fileReady) {
+				Runtime runtime = Runtime.getRuntime( );   
+				runtime.exec("emacs ./tmp/" + accountName + ".txt");
+			}
+			*/
 			
 			// Now the user reads or makes changes to their file.
 			System.out.println(
