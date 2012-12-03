@@ -183,6 +183,7 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 						chmod("400");
 						
 					} else {							// Failure
+						fileReady = false;
 						System.out.println("    Download failed, try again!");
 						clientState = ClientState.Invalid;
 					}
@@ -196,6 +197,7 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 						chmod("600");
 						
 					} else {							// Failure
+						fileReady = false;
 						System.out.println("    Download failed, try again!");
 						clientState = ClientState.Invalid;
 					}
@@ -218,6 +220,7 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 							chmod("400");
 							
 						} else {							// Failure
+							fileReady = false;
 							System.out.println("    Download failed, try again!");
 							clientState = ClientState.Invalid;
 						}
@@ -235,6 +238,7 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 						chmod("600");
 						
 					} else {							// Failure
+						fileReady = false;
 						System.out.println("    Download failed, try again!");
 						clientState = ClientState.Invalid;
 					}
@@ -266,6 +270,7 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 							chmod("400");
 							
 						} else {							// Failure
+							fileReady = false;
 							System.out.println("    Download failed, try again!");
 							clientState = ClientState.Invalid;
 						}
@@ -281,6 +286,7 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 							chmod("600");
 							
 						} else {							// Failure
+							fileReady = false;
 							System.out.println("    Download failed, try again!");
 							clientState = ClientState.Invalid;
 						}
@@ -304,7 +310,7 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 					accessMode = AccessMode.Read;
 				} else {
 					System.err.println("Unable to upload file! This is bad!");
-					break;	// This is bad.
+					break;	// This is bad!!
 				}
 			
 				break;
