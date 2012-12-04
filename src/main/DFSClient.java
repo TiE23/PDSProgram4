@@ -43,11 +43,11 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 	 * @param serverIP DFSServer's IP. (ex: "uw1-320-16")
 	 * @param port The port used for communication between client and server.
 	 */
-	public DFSClient(String accountName, String clientIP, 
+	public DFSClient(String accountName, 
 			String serverIP, String port) throws RemoteException {
 		
 		this.accountName = accountName;
-		this.clientIP = clientIP;
+		this.clientIP = getHostName();
 		this.serverIP = serverIP;
 		this.port = port;
 		
@@ -69,7 +69,7 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 	// Invalidate, an RMI method
 	public boolean invalidate() {
 		
-		System.out.println(">>>> RMI: invalidate()");
+		System.out.println("\n>>>> RMI: invalidate()");
 		clientState = ClientState.Invalid;	// Change state to invalid.
 		
 		try {
@@ -84,7 +84,7 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 	
 	// Writeback, an RMI method
 	public boolean writeback() {
-		System.out.println(">>>> RMI: writeback()");
+		System.out.println("\n>>>> RMI: writeback()");
 		if (clientState == ClientState.Write_Owned) {
 			clientState = ClientState.Release_Ownership;
 			return true;	// Change state. Return successful result.
@@ -95,7 +95,7 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 	
 	// Resume, an RMI method.
 	public void resume(String fileName) {
-		System.out.println(">>>> RMI: resume()");
+		System.out.println("\n>>>> RMI: resume()");
 		// Checks the name to make sure this is a file the client still wants.
 		if (this.fileName.equals(fileName) && pullFile(fileName, "w")) {	
 			
@@ -136,18 +136,7 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 				}
 			}
 			
-			
-			System.out.print("Current file: ");
-			
-			if (clientState == ClientState.Invalid) {
-				System.out.println("None");
-			} else {
-				System.out.println(fileName);
-			}
-			
-			System.out.println("Current Client State: " + clientState);
-			System.out.println("Current Access Mode: " + accessMode);
-			System.out.println("Current Owner?: " + hasOwnership);
+			System.out.println("FileClient: next file to open:");
 			
 			// Command line input
 			Console c = System.console();
@@ -156,8 +145,8 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 			String mode = "";
 			
 			while (!acceptable) {
-				fileTarget = c.readLine("File name: ");
-				mode = c.readLine("How(r/w): ");
+				fileTarget = c.readLine("    File name: ");
+				mode = c.readLine("    How(r/w): ");
 				
 				// Set to lower-case, functions use lower-case r and w
 				mode.toLowerCase();
@@ -167,7 +156,8 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 						(mode.equals("r") || mode.equals("w")) )
 					acceptable = true;
 				else 
-					System.out.println("Try putting a valid command this time...");
+					System.out.println("Try putting a valid " +
+							"command this time...");
 			}
 			
 			// State switch...
@@ -221,7 +211,8 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 							
 						} else {							// Failure
 							fileReady = false;
-							System.out.println("    Download failed, try again!");
+							System.out.println("    " +
+									"Download failed, try again!");
 							clientState = ClientState.Invalid;
 						}
 					}
@@ -271,7 +262,8 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 							
 						} else {							// Failure
 							fileReady = false;
-							System.out.println("    Download failed, try again!");
+							System.out.println("    " +
+									"Download failed, try again!");
 							clientState = ClientState.Invalid;
 						}
 					
@@ -287,7 +279,8 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 							
 						} else {							// Failure
 							fileReady = false;
-							System.out.println("    Download failed, try again!");
+							System.out.println("    " +
+									"Download failed, try again!");
 							clientState = ClientState.Invalid;
 						}
 					}
@@ -298,7 +291,7 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 			
 				System.out.println("    Server requests ownership release of "
 						+ fileName);
-				System.out.println("    Sorry, but your last request for " 
+				System.out.println("    Sorry, but your request for " 
 						+ fileTarget + " has been ignored.");
 				
 				fileReady = false;
@@ -316,21 +309,40 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 				break;
 			}
 			
-			/* 	emacs for linux execution!!!!
-			if (fileReady) {
-				Runtime runtime = Runtime.getRuntime( );   
-				runtime.exec("emacs ./tmp/" + accountName + ".txt");
-			}
-			*/
 			
-			// Now the user reads or makes changes to their file.
-			System.out.println(
-					"\nPlease use emacs with your file at this time...\n");
-			c.readLine("When finished close emacs and " +
-					"hit enter to continue.\n");
+			// 	emacs for Linux desktop execution.
+			if (fileReady) {
+				
+				// Print out the name of the current file.
+				System.out.print("    Current file: ");
+				if (clientState == ClientState.Invalid) {
+					System.out.println("None");
+				} else {
+					System.out.println(fileName);
+				}
+				
+				// Report the current status.
+				System.out.println("    State: " + clientState + 
+						" Mode: " + accessMode +
+						" Ownership: " + hasOwnership);
+				
+				Runtime runtime = Runtime.getRuntime( );   
+				Process emacs = runtime.exec("emacs ./tmp/" + 
+						accountName + ".txt");
+				try {
+				    emacs.waitFor();
+				} catch (InterruptedException e) {}
+				
+				// Manual emacs invocation for remote terminal use.
+				System.out.println(
+						"\nPlease use emacs with your file at this time...\n");
+				
+				// Now the user reads or makes changes to their file.
+				c.readLine("When finished close emacs and " +
+						"hit enter to continue.\n");
+			}
 		}
-		
-	}
+}
 	
 	
 	/**Pull performs a download on a requested file from the server.
@@ -340,7 +352,9 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 	 * @return Success of the download. False means no change: likely suspended
 	 */
 	private boolean pullFile(String fileName, String mode) {
-		System.out.println("pullFile("+fileName + ", " + mode + ")");
+		System.out.println("Downloading: " + fileName + 
+				" with " + mode + " mode");
+		
 		try {
 			ServerInterface server = (ServerInterface) 
 					Naming.lookup("rmi://" + serverIP + 
@@ -379,7 +393,7 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 	 * @return Success of the upload operation.
 	 */
 	private boolean pushFile() {
-		System.out.println("pushFile()");
+		System.out.println("Uploading: " + fileName);
 		
 		// Update the contents with the text file's data.
 		fileContents = new FileContents(readFromFile());
@@ -403,7 +417,6 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 	 * @return Success of the method.
 	 */
 	private boolean writeToFile(byte[] data) {
-		System.out.println("writeToFile()");
 		cleanFile(); // Clean out the file that may exist or create a new one
 		
 		try {
@@ -428,7 +441,6 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 	 * @return data in the form of a byte array. Null if there is no file!
 	 */
 	private byte[] readFromFile() {
-		System.out.println("readFromFile()");
 		File file = new File("tmp/" + accountName + ".txt");
 		
 		if (!file.exists())
@@ -450,7 +462,6 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 	/**Function deletes the cached file (if it exists) and re-initializes it.
 	 */
 	private void cleanFile() {
-		
 		File dir = new File("tmp");
 		File file = new File("tmp/" + accountName + ".txt");
 		
@@ -476,6 +487,19 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 		return true;
 	}
 	
+	/**Uses the console command "hostname" to get the client hostname.
+	 * @return The host name of this client.
+	 */
+	private String getHostName() {
+		try {
+			Runtime runtime = Runtime.getRuntime( );
+		    Process process = runtime.exec( "hostname" );
+		    InputStream input = process.getInputStream();
+		    BufferedReader bufferedInput = 
+		    		new BufferedReader( new InputStreamReader( input ) );
+		    return bufferedInput.readLine();
+		} catch (IOException e) {return "ERROR";}
+	}
 	
 	/**run Creates a new thread of DFSClient that runs the userPrompt function.
 	 */
@@ -492,14 +516,14 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		if ( args.length != 4 ) {
+		if ( args.length != 3 ) {
 		    System.err.println("usage: java DFSClient " +
-		    		"[YourName] [YourIP] [ServerIP] [port#]");
+		    		"[YourName] [ServerIP] [port#]");
 		    System.exit( -1 );
 		}
 		try {
-			DFSClient client=new DFSClient(args[0], args[1], args[2], args[3]);
-		    Naming.rebind("rmi://localhost:" + args[3] + "/dfsclient", client);
+			DFSClient client=new DFSClient(args[0], args[1], args[2]);
+		    Naming.rebind("rmi://localhost:" + args[2] + "/dfsclient", client);
 		} catch ( Exception e ) {
 		    e.printStackTrace( );
 		    System.exit( 1 );

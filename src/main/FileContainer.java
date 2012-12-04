@@ -51,7 +51,7 @@ public class FileContainer {
 			
 		} else {				// Read mode.
 			
-			readers.add(clientIP);	// Add creating client to the readers list
+			safeAddReader(clientIP);	// Add creating client to the readers list
 			fileState = FileState.Read_Shared;	// Read	
 			
 		}
@@ -70,11 +70,16 @@ public class FileContainer {
 		} else {
 			readers.add(clientIP);
 			return true;	// This client is not a reader. Add to readers.
-		}
-			
+		}	
 	}
 	
-	public void print(String message) {
-		System.out.println(message + "--> Name: " + fileName);
+	
+	/**Prints out the contents of the file's readers to the console.
+	 */
+	public void reportReaders() {
+		System.out.println("# of readers: " + readers.size());
+		for (int x = 0; x < readers.size(); ++x) {
+			System.out.println("    reader = " + readers.elementAt(x));
+		}
 	}
 }
