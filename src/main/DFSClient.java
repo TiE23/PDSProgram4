@@ -12,7 +12,7 @@ import java.rmi.server.*;
 public class DFSClient extends UnicastRemoteObject implements ClientInterface, Runnable {
 
 	// Thread object for using Runnable for the user prompts.
-	Thread thread;
+	Thread promptThread;
 	
 	/**Enum to track the different states of this DFSClient's file.*/
 	private enum ClientState {
@@ -61,8 +61,8 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 		cleanFile();	// Clean out and/or initialize the local file cache.
 		
 		// Creating a new thread for the user prompt function
-		thread = new Thread(this, "Prompt Thread");
-		thread.start();
+		promptThread = new Thread(this, "Prompt Thread");
+		promptThread.start();
 	}
 	
 	
@@ -94,6 +94,11 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 	// Resume, an RMI method.
 	public void resume(String fileName) {
 		System.out.println("\n>>>> RMI: resume( " + fileName + " )");
+		
+		synchronized(promptThread) {
+			promptThread.notify();
+		}
+		
 		// Checks the name to make sure this is a file the client still wants.
 		if (this.fileName.equals(fileName) && pullFile(fileName, "w"))
 			clientState = ClientState.Write_Owned;	// Next state
@@ -104,10 +109,6 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 	 * @throws IOException 
 	 */
 	private void userPrompt() throws Exception {
-
-		// Use special back-space character to create spinning bar.
-		String[] spinner = new String[] {"\u0008/", "\u0008-",
-										"\u0008\\", "\u0008|" };
 		
 		// The prompting loop
 		while (true) {
@@ -225,15 +226,10 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 			
 			// Force the client to wait if the file isn't ready.
 			if (clientState == ClientState.Invalid) {
-				
-				int i = 0;
-				c.printf("Please wait... |");
-				
-				// Spin wait in this thread.
-				while (clientState == ClientState.Invalid) {
-					Thread.sleep(150);
-					c.printf("%s", spinner[i]);	// Sweet spinning thing!
-					i = (++i % spinner.length);
+				System.out.println("Please wait for the file to download...");
+				// Wait until resume is called!
+				synchronized (promptThread) {
+					promptThread.wait();
 				}
 			}
 			
@@ -337,7 +333,6 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 				clientState = ClientState.Invalid;
 				hasOwnership = false;
 			}
-			
 			return result;
 		} catch (Exception e) {e.printStackTrace(); return false;}
 	}

@@ -24,10 +24,6 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 			this.clientIP = clientIP;
 			this.fileName = fileName;
 		}
-		
-		public void print(String message) {
-			System.out.println(message + "--> " + clientIP + ": " + fileName);
-		}
 	}
 	
 	private Vector<ClientContainer> jobQueueWS;
@@ -168,19 +164,18 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 					System.out.println(
 							"state ( Write_Shared -> Ownership_Change )");
 					callWriteback(fileName);			// Make writeback call.
-					suspendJobWS(clientIP, fileName);	// Suspend download().
 					file.reportReaders();
+					suspendJobWS(clientIP, fileName);	// Suspend download().
 					return null;
 					
 				case Ownership_Change:
-					suspendJobOC(clientIP, fileName);	// Suspend download().
 					System.out.println("state ( Ownership_Change )");
 					file.reportReaders();
+					suspendJobOC(clientIP, fileName);	// Suspend download().
 					return null;
 				}
 			}
 		}
-		
 		return null;
 	}
 	
@@ -404,19 +399,9 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 			return false;	// No such job exists! (This is bad!)
 			
 		} else {
-			
-			ClientContainer temp = jobQueueOC.get(index);
-			
-			try {
-				ClientInterface client = (ClientInterface)
-							Naming.lookup("rmi://" + temp.clientIP +
-									":" + port + "/dfsclient");
-				
-				client.resume(temp.fileName);	// Notify client to try again.
-				
-			} catch (Exception e) {e.printStackTrace(); return false;} 
-			
-			jobQueueOC.remove(index);	// Dequeue the job.
+			// Job exists, add to WS queue and remove from OC queue.
+			jobQueueWS.add(jobQueueOC.get(index));	// Add to WS queue.
+			jobQueueOC.remove(index);				// Dequeue the job.
 			System.out.println(" -- Success!");
 			return true;
 		}
