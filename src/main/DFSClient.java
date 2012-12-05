@@ -112,6 +112,20 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 		
 		// The prompting loop
 		while (true) {
+			
+			// Catch Release_Ownership after emacs, before prompts.
+			// This will allow immediate uploading when emacs is closed.
+			if (clientState == ClientState.Release_Ownership) {
+				System.out.println(
+						"    >>Server requests ownership release of "
+						+ fileName);
+				
+				if (!pushFile()) {
+					System.err.println("Unable to upload file! This is bad!");
+					break;	// This is bad!
+				}
+			}
+			
 			System.out.println("\nFileClient: next file to open:");
 			
 			// Command line input
@@ -194,7 +208,8 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 			// Need to release ------------------------------------------------
 			case Release_Ownership:
 				
-				System.out.println("    Server requests ownership release of "
+				System.out.println(
+						"    >>Server requests ownership release of "
 						+ fileName);
 				
 				if (!pushFile()) {
@@ -204,7 +219,7 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 				
 				if (fileName.equals(fileTarget)) {		// Same file
 					
-					System.out.println("    Server has forced read-only " +
+					System.out.println("    >>Server has forced read-only " +
 							"access of " + fileName);
 					
 					// Download from the server as a reader!

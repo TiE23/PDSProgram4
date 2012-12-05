@@ -224,8 +224,8 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 			return true;
 			
 		case Ownership_Change:
-			file.fileState = FileState.Write_Shared;	// Next state.
-			System.out.println("state ( Ownership_Change -> Write_Shared )");
+			file.fileState = FileState.Not_Shared;	// Next state.
+			System.out.println("state ( Ownership_Change -> Not_Shared )");
 			file.data = data;	// Update file's contents.
 			file.owner = "";	// Remove this owner.
 			
@@ -318,7 +318,7 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 	 * @return
 	 */
 	private boolean suspendJobWS(String clientIP, String fileName) {
-		System.out.println("Suspending WS job for " + clientIP + " using " + fileName);
+		System.out.println(">>>Suspending WS job for " + clientIP + " using " + fileName);
 		
 		int index = vectorCCcnSearch(jobQueueWS, clientIP);
 		if (index != -1) // Client already has a job waiting on this list
@@ -340,7 +340,7 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 	 * @return
 	 */
 	private boolean suspendJobOC(String clientIP, String fileName) {
-		System.out.println("Suspending OC job for " + clientIP + " using " + fileName);
+		System.out.println(">>>Suspending OC job for " + clientIP + " using " + fileName);
 		
 		int index = vectorCCcnSearch(jobQueueOC, clientIP);
 		if (index != -1) // Client already has a job waiting on this list
@@ -362,7 +362,7 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 		int index = vectorCCfnSearch(jobQueueWS, fileName);
 		
 		if (index == -1 ) {
-			System.out.println(" -- Fail!");
+			System.out.println(" -- There is none!");
 			return false;	// No such job exists! (This is bad!)
 		} else {
 			
@@ -395,12 +395,21 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 		int index = vectorCCfnSearch(jobQueueOC, fileName);
 		
 		if (index == -1) {
-			System.out.println(" -- Fail!");
+			System.out.println(" -- There is none!");
 			return false;	// No such job exists! (This is bad!)
 			
 		} else {
-			// Job exists, add to WS queue and remove from OC queue.
-			jobQueueWS.add(jobQueueOC.get(index));	// Add to WS queue.
+			/* I may have strayed a little away from the stated specifications
+			 * as this resuming function doesn't actually make the client
+			 * attempt to hopelessly try to download again, instead it
+			 * makes the server think this happened, causing for a proper
+			 * download to happen later. This still maintains proper first-
+			 * come, first-served ordering for write rights. */
+			
+			callWriteback(fileName);			// Make writeback call.
+			// Job exists, add to WS queue.
+			suspendJobWS(jobQueueOC.get(index).clientIP, 
+						 jobQueueOC.get(index).fileName);
 			jobQueueOC.remove(index);				// Dequeue the job.
 			System.out.println(" -- Success!");
 			return true;
