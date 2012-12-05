@@ -68,15 +68,11 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 	
 	// Invalidate, an RMI method
 	public boolean invalidate() {
-		
 		System.out.println("\n>>>> RMI: invalidate()");
 		clientState = ClientState.Invalid;	// Change state to invalid.
 		
-		try {
-			// Use chmod to set access to none (000).
-			Runtime runtime = Runtime.getRuntime( );   
-			runtime.exec("chmod 000 ./tmp/" + accountName + ".txt");
-		} catch (IOException e) {e.printStackTrace();}
+		// Use chmod to set access to none (000).
+		chmod("000");
 		
 		return true;
 	}
@@ -97,15 +93,8 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 	public void resume(String fileName) {
 		System.out.println("\n>>>> RMI: resume()");
 		// Checks the name to make sure this is a file the client still wants.
-		if (this.fileName.equals(fileName) && pullFile(fileName, "w")) {	
-			
+		if (this.fileName.equals(fileName) && pullFile(fileName, "w"))
 			clientState = ClientState.Write_Owned;	// Next state
-			
-			writeToFile(fileContents.get());	// Write to file.
-			
-			// Use chmod to set to write mode (600).
-			chmod("600");
-		}
 	}
 	
 	
@@ -114,27 +103,12 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 	 */
 	private void userPrompt() throws IOException {
 
-		String[] spinner = new String[] {"\u0008/", "\u0008-", "\u0008\\", "\u0008|" };
+		// Use special back-space character to create spinning bar.
+		String[] spinner = new String[] {"\u0008/", "\u0008-",
+										"\u0008\\", "\u0008|" };
 		
 		// The prompting loop
 		while (true) {
-			
-			if (clientState == ClientState.Release_Ownership) {
-				
-				System.out.println("    Server requests ownership release of "
-						+ fileName);
-				
-				if (pushFile()) {
-					// Use chmod to set to read mode (400).
-					chmod("400");
-					clientState = ClientState.Read_Shared;
-					accessMode = AccessMode.Read;
-				} else {
-					System.err.println("    Unable to upload file!");
-					break;	// This is bad.
-				}
-			}
-			
 			System.out.println("\nFileClient: next file to open:");
 			
 			// Command line input
@@ -166,29 +140,16 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 			case Invalid:								
 				
 				if (mode.equals("r")) {					// Read mode
-					if (pullFile(fileTarget, mode)) {	// Success
+					if (pullFile(fileTarget, mode))		// Success
 						clientState = ClientState.Read_Shared;
-						
-						writeToFile(fileContents.get());	// Write to file.
-						
-						// Use chmod to set to read mode (400).
-						chmod("400");
-						
-					} else {							// Failure
+					else								// Failure
 						clientState = ClientState.Invalid;
-					}
+					
 				} else {								// Write mode
-					if (pullFile(fileTarget, mode)) {	// Success
-						clientState = ClientState.Write_Owned;	// Next state
-						
-						writeToFile(fileContents.get());	// Write to file.
-						
-						// Use chmod to set to write mode (600).
-						chmod("600");
-						
-					} else {							// Failure
+					if (pullFile(fileTarget, mode)) 	// Success
+						clientState = ClientState.Write_Owned;
+					else								// Failure
 						clientState = ClientState.Invalid;
-					}
 				}
 				break;
 				
@@ -197,37 +158,19 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 				
 				if (mode.equals("r")) {					// Read mode
 					if (fileName.equals(fileTarget)) {	// Same file
-						// "Do nothing"
-						System.out.println("Using local file...");
+						System.out.println("    Using local file...");
 						
 					} else {							// Replace file
-						if (pullFile(fileTarget, mode)) {	// Success
+						if (pullFile(fileTarget, mode)) // Success
 							clientState = ClientState.Read_Shared;
-							
-							writeToFile(fileContents.get());	// Write to file.
-							
-							// Use chmod to set to read mode (400).
-							chmod("400");
-							
-						} else {							// Failure
+						else							// Failure
 							clientState = ClientState.Invalid;
-						}
 					}
 				} else {								// Write mode
-					/* Whether trying to write to the same file or a new one,
-					 * the actions taken are the same. */
-					
-					if (pullFile(fileTarget, mode)) {	// Success
-						clientState = ClientState.Write_Owned;	// Next state
-						
-						writeToFile(fileContents.get());	// Write to file.
-						
-						// Use chmod to set to write mode (600).
-						chmod("600");
-						
-					} else {							// Failure
+					if (pullFile(fileTarget, mode)) 	// Success
+						clientState = ClientState.Write_Owned;
+					else								// Failure
 						clientState = ClientState.Invalid;
-					}
 				}
 				break;
 				
@@ -242,38 +185,22 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 					if (pushFile()) {
 						accessMode = AccessMode.Invalid;
 						clientState = ClientState.Invalid;
+						hasOwnership = false;
 					} else {
-						System.err.println("Unable to upload file!");
+						System.err.println("    Unable to upload file!");
 						break;	// This is bad.
 					}
 					
 					if (mode.equals("r")) {					// Read mode
-						
-						if (pullFile(fileTarget, mode)) {	// Success
+						if (pullFile(fileTarget, mode)) 	// Success
 							clientState = ClientState.Read_Shared;
-							
-							writeToFile(fileContents.get());	// Write to file.
-							
-							// Use chmod to set to read mode (400).
-							chmod("400");
-							
-						} else {							// Failure
+						else								// Failure
 							clientState = ClientState.Invalid;
-						}
-					
 					} else {								// Write mode
-	
-						if (pullFile(fileTarget, mode)) {	// Success
+						if (pullFile(fileTarget, mode))		// Success
 							clientState = ClientState.Write_Owned;
-							
-							writeToFile(fileContents.get());	// Write to file.
-							
-							// Use chmod to set to write mode (600).
-							chmod("600");
-							
-						} else {							// Failure
+						else								// Failure
 							clientState = ClientState.Invalid;
-						}
 					}
 				}
 				break;
@@ -284,59 +211,36 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 				System.out.println("    Server requests ownership release of "
 						+ fileName);
 				
-				if (!pushFile()) {
+				if (pushFile())
+					hasOwnership = false;	
+				else {
 					System.err.println("Unable to upload file! This is bad!");
 					break;	// This is bad!
 				}
 				
 				if (fileName.equals(fileTarget)) {		// Same file
 					
-					System.out.println("    Server has forced read-only access of "
-							+ fileName);
+					System.out.println("    Server has forced read-only " +
+							"access of " + fileName);
 					
 					// Download from the server as a reader!
-					if (pullFile(fileTarget, mode)) {	// Success
+					if (pullFile(fileTarget, "r"))		// Success
 						clientState = ClientState.Read_Shared;
-						
-						writeToFile(fileContents.get());	// Write to file.
-						
-						// Use chmod to set to read mode (400).
-						chmod("400");
-						
-					} else {							// Failure
+					else								// Failure
 						clientState = ClientState.Invalid;
-					}
 					
-				// Changing the file. Handle like normal.
-				} else {
+				} else {	// Changing the file. Handle like normal.
 					
 					if (mode.equals("r")) {					// Read mode
-						
-						if (pullFile(fileTarget, mode)) {	// Success
+						if (pullFile(fileTarget, mode))		// Success
 							clientState = ClientState.Read_Shared;
-							
-							writeToFile(fileContents.get());	// Write to file.
-							
-							// Use chmod to set to read mode (400).
-							chmod("400");
-							
-						} else {							// Failure
+						else								// Failure
 							clientState = ClientState.Invalid;
-						}
-					
 					} else {								// Write mode
-	
-						if (pullFile(fileTarget, mode)) {	// Success
-							clientState = ClientState.Write_Owned;
-							
-							writeToFile(fileContents.get());	// Write to file.
-							
-							// Use chmod to set to write mode (600).
-							chmod("600");
-							
-						} else {							// Failure
+						if (pullFile(fileTarget, mode)) 	// Success
+							clientState = ClientState.Write_Owned;							
+						else								// Failure
 							clientState = ClientState.Invalid;
-						}
 					}
 				}	
 				break;
@@ -348,12 +252,12 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 				int i = 0;
 				c.printf("Please wait... |");
 				
+				// Spin wait in this thread.
 				while (clientState == ClientState.Invalid) {
 					try {
 						Thread.sleep(150);
-						c.printf("%s", spinner[i]);
-						i++;
-						i = (i % spinner.length);
+						c.printf("%s", spinner[i]);	// Sweet spinning thing!
+						i = (++i % spinner.length);
 						
 					} catch (InterruptedException e) {e.printStackTrace();}
 				}
@@ -387,7 +291,7 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 						"hit enter to continue.\n");
 			}
 		}
-}
+	}
 	
 	
 	/**Pull performs a download on a requested file from the server.
@@ -413,6 +317,7 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 			if (returnFile == null) {	// Failure
 				hasOwnership = false;
 				accessMode = AccessMode.Invalid;
+				chmod("000");	// Invalid mode.
 				return false;
 				
 			} else {					// Success
@@ -421,10 +326,14 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 				if (mode.equals("r")) {	// Read mode
 					hasOwnership = false;
 					accessMode = AccessMode.Read;
+					writeToFile(fileContents.get());	// Write to file.
+					chmod("400");	// Read mode.
 					
 				} else {				// Write mode
 					hasOwnership = true;
 					accessMode = AccessMode.Write;
+					writeToFile(fileContents.get());	// Write to file.
+					chmod("600");	// Write mode.
 				}
 				
 				return true;
@@ -447,8 +356,6 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 			ServerInterface server = (ServerInterface) 
 					Naming.lookup("rmi://" + serverIP + 
 							":" + port + "/dfsserver");
-			
-			hasOwnership = false;
 			
 			// Upload the contents of this client's file.
 			return server.upload(clientIP, fileName, fileContents);
