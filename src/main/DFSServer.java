@@ -68,6 +68,16 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 			
 		} else { // Recognized Client, update its latest file.
 			
+			// Remove this client from its previous file's reader list
+			int index = vectorFCSearch(cache, 
+					clientList.elementAt(clientIndex).fileName);
+			if (index != -1) {
+				int rindex = cache.elementAt(index).readers.indexOf(clientIP);
+				if (rindex != -1)
+					cache.elementAt(index).readers.remove(rindex);
+			}
+			// There is no need to remove ownership, that is handled in upload.
+			
 			System.out.println("Updating client " + clientIP + " with " + fileName);
 			clientList.elementAt(clientIndex).fileName = fileName;
 		}
