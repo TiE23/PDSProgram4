@@ -42,6 +42,8 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 	 * @throws RemoteException
 	 */
 	public DFSServer(String port) throws RemoteException {
+		System.out.println("Starting DFSServer on port " + port + ".");
+		
 		jobQueueWS = new Vector<ClientContainer>();
 		jobQueueOC = new Vector<ClientContainer>();
 		
@@ -58,16 +60,19 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 		
 		// Check to see if this is a recognized clientIP.
 		int clientIndex = vectorCCcnSearch(clientList, clientIP);
+		
 		if (clientIndex == -1) {
 			// It isn't, so add the client and its file.
 			System.out.println("Adding client " + clientIP);
 			clientList.add(new ClientContainer(clientIP, fileName));
+			
 		} else { // Recognized Client, update its latest file.
+			
 			System.out.println("Updating client " + clientIP + " with " + fileName);
 			clientList.elementAt(clientIndex).fileName = fileName;
 		}
 		
-		System.out.print("Download requested by " + clientIP + 
+		System.out.print("\nDownload requested by " + clientIP + 
 				" for \"" + fileName + "\" in " + mode + " mode: ");
 		
 		// Check to see if this is a recognized fileName.
@@ -179,7 +184,7 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 	// RMI Upload function.
 	public boolean upload(String clientIP, String fileName, FileContents data){
 		
-		System.out.print("Upload by " + clientIP + 
+		System.out.print("\nUpload by " + clientIP + 
 				" with \"" + fileName + "\": ");
 		
 		int fileIndex = vectorFCSearch(cache, fileName);
@@ -355,7 +360,7 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 	 * @return
 	 */
 	private boolean resumeJobWS(String fileName) {
-
+		System.out.print("Resuming WS job for " + fileName);
 		int index = vectorCCfnSearch(jobQueueWS, fileName);
 		
 		if (index == -1 ) {
@@ -375,6 +380,7 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 			} catch (Exception e) {e.printStackTrace(); return false;} 
 			
 			jobQueueWS.remove(index);	// Dequeue the job.
+			System.out.println(" -- Success!");
 			return true;
 		}
 	}
@@ -387,7 +393,7 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 	 * @return
 	 */
 	private boolean resumeJobOC(String fileName) {
-		
+		System.out.print("Resuming OC job for " + fileName);
 		int index = vectorCCfnSearch(jobQueueOC, fileName);
 		
 		if (index == -1) {
@@ -407,6 +413,7 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 			} catch (Exception e) {e.printStackTrace(); return false;} 
 			
 			jobQueueOC.remove(index);	// Dequeue the job.
+			System.out.println(" -- Success!");
 			return true;
 		}
 	}
