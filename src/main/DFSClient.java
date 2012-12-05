@@ -68,7 +68,8 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 	
 	// Invalidate, an RMI method
 	public boolean invalidate() {
-		System.out.println("\n>>>> RMI: invalidate()");
+		System.out.println("\n>>>> RMI: invalidate(), " + 
+				fileName + " is updated serverside!");
 		clientState = ClientState.Invalid;	// Change state to invalid.
 		accessMode = AccessMode.Invalid;
 		
@@ -273,7 +274,7 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 	 * @return Success of the download. False means no change: likely suspended
 	 */
 	private boolean pullFile(String fileName, String mode) {
-		System.out.println("Downloading: " + fileName + 
+		System.out.println("    Downloading: " + fileName + 
 				" with " + mode + " mode");
 		
 		try {
@@ -315,11 +316,10 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 	
 	
 	/**Push performs an upload of the client's current file.
-	 * NOTE: Performs no other tasks other than to upload fileContents!!!
 	 * @return Success of the upload operation.
 	 */
 	private boolean pushFile() {
-		System.out.println("Uploading: " + fileName);
+		System.out.println("    Uploading: " + fileName);
 		
 		// Update the contents with the text file's data.
 		fileContents = new FileContents(readFromFile());

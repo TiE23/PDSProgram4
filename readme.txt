@@ -6,8 +6,14 @@ December 2012
 How to run!
 
 1) SSH
-For clients, at the time you should open two terminals to the same machine.
-For the server, open one terminal to a single dedicated machine.
+If doing this on a Linux lab machine, you can use the following commands for
+full emacs functionality.
+For each terminal:
+    $ export DISPLAY=:0
+    $ ssh -X -l <uwID> uw1-320-xx
+    
+Otherwise, you should dedicate a terminal (if through PuTTY) to opening your
+text files in pico/nano/emacs.
 
 2) Navigate to the folder that holds all of the .java files.
 
@@ -26,7 +32,7 @@ java main.DFSServer <port>
 
 6) Run client program
 [Client Terminal 1]
-java main.DFSClient <accountName> <clientIP> <serverIP> <port>
+java main.DFSClient <accountName> <serverIP> <port>
 
 ** IPs are formatted like "uw1-320-09"
 ** Port must match between all machines and all commands.

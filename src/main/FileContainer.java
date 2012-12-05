@@ -77,6 +77,9 @@ public class FileContainer {
 	/**Prints out the contents of the file's readers to the console.
 	 */
 	public void reportReaders() {
+		if (!owner.equals("")) 
+			System.out.println("owner: " + owner);
+		
 		System.out.println("# of readers: " + readers.size());
 		for (int x = 0; x < readers.size(); ++x) {
 			System.out.println("    reader = " + readers.elementAt(x));
