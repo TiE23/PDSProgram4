@@ -73,7 +73,10 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 		// Check to see if this is a recognized fileName.
 		int fileIndex = vectorFCSearch(cache, fileName);
 		
-		if (fileIndex == -1) {	// File doesn't exist!
+		// File doesn't exist, add it and give it to the client ---------------
+		
+		if (fileIndex == -1) {	
+			
 			System.out.print("file \"" + fileName + "\" created");
 			// Create a new File with fileName, the requesting client, and mode
 			FileContainer newFile = 
@@ -83,7 +86,9 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 			return newFile.data;	// return the FileContents
 			
 		} else {
-			if (mode.equals("r")) {	// File exists, requests READ!
+			
+			// File exists, requests read -------------------------------------
+			if (mode.equals("r")) {	
 		
 				// Get the requested file...
 				FileContainer file = cache.elementAt(fileIndex);
@@ -123,7 +128,9 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 					return file.data;
 				}
 			
-			} else {				// File exists, requests WRITE!
+			// File exists, requests write ------------------------------------
+			} else {		
+				
 				// Get the requested file...
 				FileContainer file = cache.elementAt(fileIndex);
 				

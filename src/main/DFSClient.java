@@ -162,7 +162,10 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 			
 			// State switch...
 			switch (clientState) {	
-			case Invalid:								// No file
+			
+			// No file --------------------------------------------------------
+			case Invalid:								
+				
 				if (mode.equals("r")) {					// Read mode
 					if (pullFile(fileTarget, mode)) {	// Success
 						clientState = ClientState.Read_Shared;
@@ -194,7 +197,9 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 				}
 				break;
 				
-			case Read_Shared:							// Reading a file
+			// Reading a file -------------------------------------------------
+			case Read_Shared:							
+				
 				if (mode.equals("r")) {					// Read mode
 					if (fileName.equals(fileTarget)) {	// Same file
 						// "Do nothing"
@@ -236,7 +241,9 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 				}
 				break;
 				
-			case Write_Owned:							// Writing a file
+			// Writing a file -------------------------------------------------
+			case Write_Owned:							
+				
 				if (fileName.equals(fileTarget)) {		// Same file
 					// "Do nothing"
 					System.out.println("    Using local file...");
@@ -287,14 +294,11 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 				}
 				break;
 				
-			case Release_Ownership:						// Need to release
-			
+			// Need to release ------------------------------------------------
+			case Release_Ownership:
+				
 				System.out.println("    Server requests ownership release of "
 						+ fileName);
-				System.out.println("    Sorry, but your request for " 
-						+ fileTarget + " has been ignored.");
-				
-				fileReady = false;
 				
 				if (pushFile()) {
 					// Use chmod to set to read mode (400).
@@ -303,10 +307,72 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 					accessMode = AccessMode.Read;
 				} else {
 					System.err.println("Unable to upload file! This is bad!");
-					break;	// This is bad!!
+				}
+				
+				if (fileName.equals(fileTarget)) {		// Same file
+					
+					System.out.println("    Server has forced read-only access of "
+							+ fileName);
+				} else {
+					
+					if (mode.equals("r")) {					// Read mode
+						
+						if (pullFile(fileTarget, mode)) {	// Success
+							clientState = ClientState.Read_Shared;
+							
+							writeToFile(fileContents.get());	// Write to file.
+							
+							// Use chmod to set to read mode (400).
+							chmod("400");
+							
+						} else {							// Failure
+							fileReady = false;
+							System.out.println("    " +
+									"Download failed, try again!");
+							clientState = ClientState.Invalid;
+						}
+					
+					} else {								// Write mode
+	
+						if (pullFile(fileTarget, mode)) {	// Success
+							clientState = ClientState.Write_Owned;
+							
+							writeToFile(fileContents.get());	// Write to file.
+							
+							// Use chmod to set to write mode (600).
+							chmod("600");
+							
+						} else {							// Failure
+							fileReady = false;
+							System.out.println("    " +
+									"Download failed, try again!");
+							clientState = ClientState.Invalid;
+						}
+					}
+				}
+					
+				break;
+				
+			/* ORIGINAL
+			case Release_Ownership:						
+				
+				System.out.println("    Server requests ownership release of "
+						+ fileName);
+				System.out.println("    Sorry, but your request for " 
+						+ fileTarget + " has been ignored.");
+				
+				fileReady = false;
+				
+				if (pushFile() && fileName.equals(fileTarget)) {
+					// Use chmod to set to read mode (400).
+					chmod("400");
+					clientState = ClientState.Read_Shared;
+					accessMode = AccessMode.Read;
+				} else {
+					System.err.println("Unable to upload file! This is bad!");
 				}
 			
-				break;
+				break;*/
 			}
 			
 			
@@ -326,6 +392,8 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 						" Mode: " + accessMode +
 						" Ownership: " + hasOwnership);
 				
+				long startTime = System.currentTimeMillis();
+				
 				Runtime runtime = Runtime.getRuntime( );   
 				Process emacs = runtime.exec("emacs ./tmp/" + 
 						accountName + ".txt");
@@ -333,13 +401,18 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 				    emacs.waitFor();
 				} catch (InterruptedException e) {}
 				
-				// Manual emacs invocation for remote terminal use.
-				System.out.println(
-						"\nPlease use emacs with your file at this time...\n");
 				
-				// Now the user reads or makes changes to their file.
-				c.readLine("When finished close emacs and " +
-						"hit enter to continue.\n");
+				if (System.currentTimeMillis() - startTime < 100) {
+					// emacs didn't launch...
+					
+					// Manual emacs invocation for remote terminal use.
+					System.out.println(
+							"\nPlease edit your file at this time...\n");
+					
+					// Now the user reads or makes changes to their file.
+					c.readLine("When finished close emacs and " +
+							"hit enter to continue.\n");
+				}
 			}
 		}
 }
