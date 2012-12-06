@@ -31,10 +31,10 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 	
 	private ClientState clientState; 	// The current state of this client.
 	private AccessMode accessMode;		// The current file access mode (r/w).
+	private boolean hasOwnership;		// Is this file owned by this client?
 	
 	private FileContents fileContents;	// This client's file contents object.
 	private String fileName;			// Name of the file.
-	private boolean hasOwnership;		// Is this file owned by this client?
 	
 	
 	/**Constructor for DFSClient

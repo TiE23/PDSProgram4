@@ -79,7 +79,7 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 		}
 		
 		System.out.print("\nDownload requested by " + clientIP + 
-				" for \"" + fileName + "\" in " + mode + " mode: ");
+				" for \"" + fileName + "\" in " + mode + " mode.\n");
 		
 		// Check to see if this is a recognized fileName.
 		int fileIndex = vectorFCSearch(cache, fileName);
@@ -184,7 +184,7 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 	public boolean upload(String clientIP, String fileName, FileContents data){
 		
 		System.out.print("\nUpload by " + clientIP + 
-				" with \"" + fileName + "\": ");
+				" with \"" + fileName + "\"\n");
 		
 		int fileIndex = vectorFCSearch(cache, fileName);
 		if (fileIndex == -1) {
@@ -298,13 +298,13 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 							":" + port + "/dfsclient");
 			
 			System.out.println("Calling writeback for file \"" + fileName + 
-					"\" from owner: " + owner);
+					"\" from " + owner);
 			
 			return client.writeback();	// Call writeback!
 			
 			} catch (Exception e) {e.printStackTrace(); return false;}
 			
-		} else	// File has no owner, thus, the file must be sync'd.
+		} else	// File has no owner, thus, the file must be sync'd already.
 			return false;
 	}
 	
@@ -358,7 +358,7 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 	 * @return
 	 */
 	private boolean resumeJobWS(String fileName) {
-		System.out.print(">>>Resuming WS job for " + fileName);
+		System.out.println(">>>Resuming WS job for " + fileName);
 		int index = vectorCCfnSearch(jobQueueWS, fileName);
 		
 		if (index == -1 ) {
@@ -378,7 +378,7 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 			} catch (Exception e) {e.printStackTrace(); return false;} 
 			
 			jobQueueWS.remove(index);	// Dequeue the job.
-			System.out.println(" -- Success!");
+			System.out.println(">>>Resuming WS Success!");
 			return true;
 		}
 	}
@@ -391,7 +391,7 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 	 * @return
 	 */
 	private boolean resumeJobOC(String fileName) {
-		System.out.print(">>>Resuming OC job for " + fileName);
+		System.out.println(">>>Resuming OC job for " + fileName);
 		int index = vectorCCfnSearch(jobQueueOC, fileName);
 		
 		if (index == -1) {
@@ -406,12 +406,11 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 			 * download to happen later. This still maintains proper first-
 			 * come, first-served ordering for write rights. */
 			
-			callWriteback(fileName);			// Make writeback call.
-			// Job exists, add to WS queue.
-			suspendJobWS(jobQueueOC.get(index).clientIP, 
-						 jobQueueOC.get(index).fileName);
+			// Doing this artificially so the client doesn't actually need to.
+			download(jobQueueOC.get(index).clientIP, 
+					 jobQueueOC.get(index).fileName, "w");
 			jobQueueOC.remove(index);				// Dequeue the job.
-			System.out.println(" -- Success!");
+			System.out.println(">>>Resuming OC Success!");
 			return true;
 		}
 	}
