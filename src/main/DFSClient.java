@@ -68,8 +68,8 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 	
 	// Invalidate, an RMI method
 	public boolean invalidate() {
-		System.out.println("\n>>>> RMI: invalidate(), " + 
-				fileName + " is updated serverside!");
+		System.out.println("\n  Notice: " + fileName + 
+				" has been updated serverside!");
 		clientState = ClientState.Invalid;	// Change state to invalid.
 		accessMode = AccessMode.Invalid;
 		
@@ -82,7 +82,6 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 	
 	// Writeback, an RMI method
 	public boolean writeback() {
-		System.out.println("\n>>>> RMI: writeback()");
 		if (clientState == ClientState.Write_Owned) {
 			clientState = ClientState.Release_Ownership;
 			return true;	// Change state. Return successful result.
@@ -93,10 +92,8 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 	
 	// Resume, an RMI method.
 	public void resume(String fileName) {
-		System.out.println("\n>>>> RMI: resume( " + fileName + " )");
-		
 		synchronized(promptThread) {
-			promptThread.notify();
+			promptThread.notify();	// Notify the waiting promptThread.
 		}
 		
 		// Checks the name to make sure this is a file the client still wants.
@@ -117,7 +114,7 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 			// This will allow immediate uploading when emacs is closed.
 			if (clientState == ClientState.Release_Ownership) {
 				System.out.println(
-						"    >>Server requests ownership release of "
+						"  >>Server requests ownership release of "
 						+ fileName);
 				
 				if (!pushFile()) {
@@ -126,7 +123,7 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 				}
 			}
 			
-			System.out.println("\nFileClient: next file to open:");
+			System.out.println("\n\nFileClient: next file to open:");
 			
 			// Command line input
 			Console c = System.console();
@@ -146,8 +143,8 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 						( mode.equals("r") || mode.equals("w") ))
 					acceptable = true;
 				else 
-					System.out.println("Try putting a valid " +
-							"command this time...");
+					System.out.println("...try putting a valid " +
+							"command next time...");
 			}
 			
 			// State switch...
@@ -209,7 +206,7 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 			case Release_Ownership:
 				
 				System.out.println(
-						"    >>Server requests ownership release of "
+						"  >>Server requests ownership release of "
 						+ fileName);
 				
 				if (!pushFile()) {
@@ -219,7 +216,7 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 				
 				if (fileName.equals(fileTarget)) {		// Same file
 					
-					System.out.println("    >>Server has forced read-only " +
+					System.out.println("  >>Server has forced read-only " +
 							"access of " + fileName);
 					
 					// Download from the server as a reader!
@@ -250,7 +247,7 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 			
 			// Report the current status.
 			System.out.println(
-					"    Current file: " + fileName + 
+					"\n    Current file: " + fileName + 
 					"\n    State: " + clientState + 
 					", Mode: " + accessMode +
 					", Ownership: " + hasOwnership);
@@ -267,7 +264,7 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 				
 				// Manual emacs invocation for remote terminal use.
 				System.out.println(
-						"\nPlease edit your file at this time...\n");
+						"\n\nPlease edit your file at this time...\n");
 				
 				// Now the user reads or makes changes to their file.
 				c.readLine("When finished editing, close the editor and\n" +

@@ -284,7 +284,6 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 	 * @return If the writeback was successful.
 	 */
 	private boolean callWriteback(String fileName) {
-		
 		int fileIndex = vectorFCSearch(cache, fileName);
 		if ( fileIndex == -1 )
 			return false;
@@ -318,8 +317,6 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 	 * @return
 	 */
 	private boolean suspendJobWS(String clientIP, String fileName) {
-		System.out.println(">>>Suspending WS job for " + clientIP + " using " + fileName);
-		
 		int index = vectorCCcnSearch(jobQueueWS, clientIP);
 		if (index != -1) // Client already has a job waiting on this list
 			jobQueueWS.remove(index);	// Remove the job (to replace it)
@@ -340,8 +337,6 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 	 * @return
 	 */
 	private boolean suspendJobOC(String clientIP, String fileName) {
-		System.out.println(">>>Suspending OC job for " + clientIP + " using " + fileName);
-		
 		int index = vectorCCcnSearch(jobQueueOC, clientIP);
 		if (index != -1) // Client already has a job waiting on this list
 			jobQueueOC.remove(index);	// Remove the job (to replace it)
@@ -358,11 +353,9 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 	 * @return
 	 */
 	private boolean resumeJobWS(String fileName) {
-		System.out.println(">>>Resuming WS job for " + fileName);
 		int index = vectorCCfnSearch(jobQueueWS, fileName);
 		
 		if (index == -1 ) {
-			System.out.println(" -- There is none!");
 			return false;	// No such job exists! (This is bad!)
 		} else {
 			
@@ -378,7 +371,6 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 			} catch (Exception e) {e.printStackTrace(); return false;} 
 			
 			jobQueueWS.remove(index);	// Dequeue the job.
-			System.out.println(">>>Resuming WS Success!");
 			return true;
 		}
 	}
@@ -391,11 +383,9 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 	 * @return
 	 */
 	private boolean resumeJobOC(String fileName) {
-		System.out.println(">>>Resuming OC job for " + fileName);
 		int index = vectorCCfnSearch(jobQueueOC, fileName);
 		
 		if (index == -1) {
-			System.out.println(" -- There is none!");
 			return false;	// No such job exists! (This is bad!)
 			
 		} else {
@@ -410,7 +400,6 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 			download(jobQueueOC.get(index).clientIP, 
 					 jobQueueOC.get(index).fileName, "w");
 			jobQueueOC.remove(index);				// Dequeue the job.
-			System.out.println(">>>Resuming OC Success!");
 			return true;
 		}
 	}
