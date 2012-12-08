@@ -16,8 +16,10 @@ public class FileContainer {
 		Not_Shared, Read_Shared, Write_Shared, Ownership_Change
 	}
 	
+	
+	// Important data for this file. Made public to avoid getters and setters.
 	public String fileName;
-	public Vector<String> readers;
+	public Vector<String> readers;	// List of current readers.
 	public String owner;
 	public FileState fileState;
 	public FileContents data;
@@ -62,15 +64,22 @@ public class FileContainer {
 	
 	/**Add a clientIP as a reader for this file without inserting repeats.
 	 * @param clientIP The new client wanting to read this file.
-	 * @return 
 	 */
-	public boolean safeAddReader(String clientIP) {
-		if (readers.contains(clientIP)) {
-			return false;	// This client is already a reader. Don't add again
-		} else {
+	public void safeAddReader(String clientIP) {
+		if (!readers.contains(clientIP))
 			readers.add(clientIP);
-			return true;	// This client is not a reader. Add to readers.
-		}	
+	}
+	
+	
+	/**Remove a clientIP from the readers list. This is important to do
+	 * to avoid mistakingly invalidating its files later on. Reader-ship is
+	 * lost when it changes files or becomes the owner/writer of the file.
+	 * @param clientIP The client
+	 */
+	public void removeReader(String clientIP) {
+		int index = readers.indexOf(clientIP);
+		if (index != -1)
+			readers.remove(index);
 	}
 	
 	

@@ -3,7 +3,6 @@
 package main;
 
 import java.io.*;
-import java.util.*;
 
 /**Class holds the byte[] data of the file.
  */

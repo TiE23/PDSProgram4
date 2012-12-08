@@ -67,11 +67,10 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 			// Remove this client from its previous file's reader list
 			int index = vectorFCSearch(cache, 
 					clientList.elementAt(clientIndex).fileName);
-			if (index != -1) {
-				int rindex = cache.elementAt(index).readers.indexOf(clientIP);
-				if (rindex != -1)
-					cache.elementAt(index).readers.remove(rindex);
-			}
+			if (index != -1) 
+				cache.elementAt(index).removeReader(clientIP);
+				
+			
 			// There is no need to remove ownership, that is handled in upload.
 			
 			System.out.println("Updating client " + clientIP + " with " + fileName);
@@ -254,7 +253,7 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 			try {
 				
 				/* This statement is ugly. It finds a known client and checks
-				 * to see if it's last used file matches the one we're seeking
+				 * to see if its last used file matches the one we're seeking
 				 * to invalidate on client machines. */
 				if ( clientList.elementAt(
 						vectorCCcnSearch(clientList, clientName)).
