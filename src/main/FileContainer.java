@@ -45,6 +45,7 @@ public class FileContainer {
 	public FileContainer(String fileName, String clientIP, String mode) {
 		this.fileName = fileName;
 		readers = new Vector<String>();
+		owner = "";
 		
 		if (mode.equals("w")) {	// Write mode.
 			
@@ -80,6 +81,10 @@ public class FileContainer {
 		int index = readers.indexOf(clientIP);
 		if (index != -1)
 			readers.remove(index);
+		
+		// If all readers and owner are removed...
+		if (readers.size() == 0 && owner.equals(""))
+			fileState = FileState.Not_Shared;
 	}
 	
 	
