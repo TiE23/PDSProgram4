@@ -1,6 +1,8 @@
 // Kyle Geib - Program 4 - CSS434 Fall 2012 - Dr Fukuda - December 13th 2012
+// ClientInterface.java
 
 package main;
+
 import java.rmi.*;
 
 /**Interface class for the DFSClient.

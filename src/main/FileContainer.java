@@ -1,4 +1,5 @@
 // Kyle Geib - Program 4 - CSS434 Fall 2012 - Dr Fukuda - December 13th 2012
+// FileContainer.java
 
 package main;
 
@@ -54,7 +55,7 @@ public class FileContainer {
 			
 		} else {				// Read mode.
 			
-			safeAddReader(clientIP);	// Add creating client to the readers list
+			safeAddReader(clientIP);// Add creating client to the readers list
 			fileState = FileState.Read_Shared;	// Read	
 			
 		}

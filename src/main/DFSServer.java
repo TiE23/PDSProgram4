@@ -1,4 +1,5 @@
 // Kyle Geib - Program 4 - CSS434 Fall 2012 - Dr Fukuda - December 13th 2012
+// DFSServer.java
 
 package main;
 
@@ -73,7 +74,8 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 			
 			// There is no need to remove ownership, that is handled in upload.
 			
-			System.out.println("Updating client " + clientIP + " with " + fileName);
+			System.out.println("Updating client " + clientIP + 
+					" with " + fileName);
 			clientList.elementAt(clientIndex).fileName = fileName;
 		}
 		
@@ -146,7 +148,8 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 					// Add the client as the owner.
 					file.owner = clientIP;
 					file.fileState = FileState.Write_Shared;	// Next state.
-					System.out.println("state ( Not_Shared -> Write_Shared )");
+					System.out.println(
+							"state ( Not_Shared -> Write_Shared )");
 					file.reportReaders();
 					return file.data;
 					
@@ -154,7 +157,8 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 					// Add the client as the owner.
 					file.owner = clientIP;
 					file.fileState = FileState.Write_Shared;	// Next state.
-					System.out.println("state ( Read_Shared -> Write_Shared )");
+					System.out.println(
+							"state ( Read_Shared -> Write_Shared )");
 					file.reportReaders();
 					return file.data;
 					
@@ -247,7 +251,8 @@ public class DFSServer extends UnicastRemoteObject implements ServerInterface {
 	 * @throws Exception
 	 */
 	private void invalidateAll(FileContainer file) {
-		System.out.println("Invalidating all readers of \"" + file.fileName + "\"");
+		System.out.println("Invalidating all readers of \"" + 
+				file.fileName + "\"");
 		for (int x = 0; x < file.readers.size(); ++x) {
 			String clientName = file.readers.elementAt(x);
 			try {

@@ -1,4 +1,5 @@
 // Kyle Geib - Program 4 - CSS434 Fall 2012 - Dr Fukuda - December 13th 2012
+// DFSClient.java
 
 package main;
 
@@ -9,7 +10,8 @@ import java.rmi.server.*;
 /**DFS Client
  * @author Kyle Geib
  */
-public class DFSClient extends UnicastRemoteObject implements ClientInterface, Runnable {
+public class DFSClient extends UnicastRemoteObject implements ClientInterface, 
+	Runnable {
 
 	// Thread object for using Runnable for the user prompts.
 	Thread promptThread;
@@ -39,7 +41,6 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 	
 	/**Constructor for DFSClient
 	 * @param accountName The user's name.
-	 * @param clientIP The client's own IP name. (ex: "uw1-320-09")
 	 * @param serverIP DFSServer's IP. (ex: "uw1-320-16")
 	 * @param port The port used for communication between client and server.
 	 */
@@ -151,7 +152,7 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 			switch (clientState) {	
 			
 			// No file --------------------------------------------------------
-			case Invalid:								
+			case Invalid:
 				
 				if (mode.equals("r")) {					// Read mode
 					if (pullFile(fileTarget, mode))
@@ -230,8 +231,8 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 							clientState = ClientState.Read_Shared;
 					} else {								// Write mode
 						if (pullFile(fileTarget, mode))
-							clientState = ClientState.Write_Owned;							
-					}
+							clientState = ClientState.Write_Owned;
+}
 				}	
 				break;
 			}
@@ -290,7 +291,7 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 					Naming.lookup("rmi://" + serverIP + 
 							":" + port + "/dfsserver");
 			
-			FileContents returnFile = server.download(clientIP, fileName, mode); 
+			FileContents returnFile =server.download(clientIP, fileName, mode);
 			
 			// This will be the new file...
 			this.fileName = fileName;
@@ -376,7 +377,7 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 		
 		if (!file.exists())
 			return null;	// File doesn't exist!
-
+		
 		try {
 			FileInputStream fis = new FileInputStream(file);
 			byte[] data = new byte[(int) file.length()];
@@ -388,8 +389,8 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 			
 		} catch (IOException e) { e.printStackTrace(); return null; }
 	}
-	
-	
+
+
 	/**Function deletes the cached file (if it exists) and re-initializes it.
 	 */
 	private void cleanFile() {
@@ -405,7 +406,7 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 		} catch (IOException e) { e.printStackTrace(); }
 	}
 
-	
+
 	/**chmod command function
 	 * @param code Numerical code for permissions
 	 * @return Success of the operation
@@ -417,7 +418,7 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 		} catch (IOException e) {e.printStackTrace(); return false;}
 		return true;
 	}
-	
+
 	/**Uses the console command "hostname" to get the client hostname.
 	 * @return The host name of this client.
 	 */
@@ -431,7 +432,7 @@ public class DFSClient extends UnicastRemoteObject implements ClientInterface, R
 		    return bufferedInput.readLine();
 		} catch (IOException e) {return "ERROR";}
 	}
-	
+
 	/**run Creates a new thread of DFSClient that runs the userPrompt function.
 	 */
 	public void run() {
