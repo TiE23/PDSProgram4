@@ -3,16 +3,6 @@ CSS 434 Parallel and Distributed Computing, Dr. Munehiro Fukuda
 Program 4: Distributed File System
 December 2012
 
-If you're reading this and looking to cheat off my code... Remember...
-    
-    "You're only hurting yourself."
-
-That, and you'll not be able to put this DFS file server project on your
-resume, robbing you of a great talking point with a potential recruiter.
-
-    "Winners don't do drugs... Unless it's steroids."
-
-
 How to run!
 
 1) SSH
