@@ -1,5 +1,5 @@
-Kyle Geib
-CSS 434 Parallel and Distributed Computing, Dr. Munehiro Fukuda
+Kyle G
+Parallel and Distributed Computing, Fukuda
 Program 4: Distributed File System
 December 2012
 
